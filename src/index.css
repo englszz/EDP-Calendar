@@ -1,0 +1,49 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background-color: #0f0f14;
+  color: #e2e8f0;
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+:root {
+  --primary: #6366f1;
+  --primary-dark: #4f46e5;
+  --surface: #0f0f14;
+  --card: #16161f;
+  --border: #252535;
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #0f0f14; }
+::-webkit-scrollbar-thumb { background: #252535; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #6366f1; }
+
+.card {
+  @apply bg-surface-card border border-surface-border rounded-2xl;
+}
+
+.btn-primary {
+  @apply bg-primary hover:bg-primary-dark text-white font-medium px-4 py-2 rounded-xl transition-all duration-200 active:scale-95;
+}
+
+.btn-ghost {
+  @apply bg-transparent hover:bg-white/5 text-slate-400 hover:text-white font-medium px-4 py-2 rounded-xl transition-all duration-200;
+}
+
+.input {
+  @apply w-full bg-surface border border-surface-border rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-primary transition-colors text-sm;
+}
+
+.badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
