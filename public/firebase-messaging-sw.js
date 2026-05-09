@@ -1,5 +1,5 @@
-importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js');
 
 firebase.initializeApp({
   apiKey: "AIzaSyC-8uUGbnQO9Vvi68fmxn8zKzWJpGehT-g",
@@ -13,14 +13,15 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
-  const notification = payload.notification || {};
+  console.log('📬 Notificación en background:', payload);
 
-  self.registration.showNotification(
-    notification.title || 'EDP Calendar',
-    {
-      body: notification.body || 'Tienes una tarea pendiente.',
-      icon: '/logo192.png',
-      badge: '/logo192.png'
-    }
-  );
+  const notificationTitle = payload.notification?.title || 'EDP Calendar';
+  const notificationOptions = {
+    body: payload.notification?.body || 'Tienes un evento próximo',
+    icon: '/logo192.png',
+    badge: '/logo192.png',
+    data: payload.data || {}   // importante para clicks
+  };
+
+  self.registration.showNotification(notificationTitle, notificationOptions);
 });
