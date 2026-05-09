@@ -11,7 +11,6 @@ export const requestNotificationPermission = async () => {
     console.log('Permiso:', permission);
 
     if (permission !== 'granted') {
-      console.log('Permiso denegado');
       return null;
     }
 
@@ -19,12 +18,15 @@ export const requestNotificationPermission = async () => {
     console.log('Messaging:', messaging);
 
     if (!messaging) {
-      console.log('Firebase Messaging no soportado');
       return null;
     }
 
-    const registration = await navigator.serviceWorker.ready;
-    console.log('Service Worker listo:', registration);
+    // Registrar manualmente el service worker
+    const registration = await navigator.serviceWorker.register(
+      '/firebase-messaging-sw.js'
+    );
+
+    console.log('Service Worker registrado:', registration);
 
     const token = await getToken(messaging, {
       vapidKey: VAPID_KEY,
