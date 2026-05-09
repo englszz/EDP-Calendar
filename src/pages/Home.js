@@ -6,7 +6,7 @@ import TaskModal from '../components/tasks/TaskModal';
 import TaskDetailModal from '../components/tasks/TaskDetailModal';
 import CalendarModal from '../components/tasks/CalendarModal';
 import { CATEGORIES, isOverdue } from '../utils/helpers';
-import { format, isSameDay, isToday, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths } from 'date-fns';
+import { format, isToday, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 const FILTERS = ['Todas', 'Hoy', 'Pendientes', 'Completadas'];
