@@ -1,9 +1,6 @@
 import React from 'react';
-import { format, isSameDay, isToday, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths } from 'date-fns';
+import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-
-// ←←← Añade estas funciones si no las tienes importadas
-// (las necesitarás para que funcione)
 
 function getCategoryInfo(category) {
   const categories = {
