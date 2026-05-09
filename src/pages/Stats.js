@@ -1,133 +1,227 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTasks } from '../hooks/useTasks';
 import { useProjects } from '../hooks/useProjects';
-import { CATEGORIES } from '../utils/helpers';
-import { format, subDays } from 'date-fns';
+import { CATEGORIES, PRIORITIES, formatCurrency, convertCurrency } from '../utils/helpers';
+import { format, subDays, isThisWeek } from 'date-fns';
+import { es } from 'date-fns/locale';
+import {
+  PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid
+} from 'recharts';
+
+const CustomTooltip = ({ active, payload }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-[#1a1a1a] border border-[#2a2a2a] px-3 py-2 text-xs">
+        <p className="text-white font-medium">{payload[0].name}</p>
+        <p className="text-slate-400">{payload[0].value} tareas</p>
+      </div>
+    );
+  }
+  return null;
+};
 
 export default function Stats() {
   const { tasks } = useTasks();
   const { projects } = useProjects();
+  const [displayCurrency, setDisplayCurrency] = useState('USD');
 
-  const completedTasks = tasks.filter(t => t.completed);
-  const rate = tasks.length > 0 ? Math.round((completedTasks.length / tasks.length) * 100) : 0;
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
 
-  // Tasks by category
+  const completed = tasks.filter(t => t.completed);
+  const pending   = tasks.filter(t => !t.completed);
+  const overdue   = tasks.filter(t => !t.completed && t.dueDate && t.dueDate < todayStr);
+  const dueToday  = tasks.filter(t => !t.completed && t.dueDate === todayStr);
+  const thisWeek  = tasks.filter(t => t.dueDate && isThisWeek(new Date(t.dueDate), { locale: es }));
+  const rate      = tasks.length > 0 ? Math.round((completed.length / tasks.length) * 100) : 0;
+
   const byCategory = useMemo(() =>
     CATEGORIES.map(cat => ({
-      ...cat,
-      total: tasks.filter(t => t.category === cat.value).length,
-      done: tasks.filter(t => t.category === cat.value && t.completed).length,
-    })).filter(c => c.total > 0),
+      name:  cat.label,
+      value: tasks.filter(t => t.category === cat.value).length,
+      color: cat.color,
+    })).filter(c => c.value > 0),
     [tasks]
   );
 
-  // Last 7 days activity
-  const last7 = useMemo(() => {
-    return Array.from({ length: 7 }, (_, i) => {
-      const d = subDays(new Date(), 6 - i);
-      const dateStr = format(d, 'yyyy-MM-dd');
-      return {
-        date: format(d, 'EEE', { locale: undefined }),
-        count: tasks.filter(t => t.dueDate === dateStr).length,
-        done: tasks.filter(t => t.dueDate === dateStr && t.completed).length,
-      };
-    });
-  }, [tasks]);
+  const byPriority = useMemo(() =>
+    PRIORITIES.map(p => ({
+      name:  p.label,
+      value: tasks.filter(t => t.priority === p.value).length,
+      color: p.color,
+    })).filter(p => p.value > 0),
+    [tasks]
+  );
 
-  const maxCount = Math.max(...last7.map(d => d.count), 1);
+  const last7 = useMemo(() =>
+    Array.from({ length: 7 }, (_, i) => {
+      const d  = subDays(new Date(), 6 - i);
+      const ds = format(d, 'yyyy-MM-dd');
+      return {
+        day:         format(d, 'EEE', { locale: es }),
+        Pendientes:  tasks.filter(t => t.dueDate === ds && !t.completed).length,
+        Completadas: tasks.filter(t => t.dueDate === ds && t.completed).length,
+      };
+    }),
+    [tasks]
+  );
+
+  const toDisplay = (amount, currency) => convertCurrency(amount, currency || 'USD', displayCurrency);
+  const totalRevenue   = projects.reduce((a, p) => a + toDisplay(p.budget || 0, p.currency), 0);
+  const earnedRevenue  = projects.filter(p => p.status === 'completed').reduce((a, p) => a + toDisplay(p.budget || 0, p.currency), 0);
+  const pendingRevenue = projects.filter(p => p.status === 'active').reduce((a, p) => a + toDisplay(p.budget || 0, p.currency), 0);
+
+  const Stat = ({ label, value, sub }) => (
+    <div className="card p-4">
+      <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">{label}</p>
+      <p className="text-2xl font-display font-bold text-white">{value}</p>
+      {sub && <p className="text-xs text-slate-600 mt-0.5">{sub}</p>}
+    </div>
+  );
 
   return (
-    <div className="animate-fade-in">
-      <div className="mb-6">
+    <div className="animate-fade-in space-y-6">
+      <div>
         <h1 className="text-2xl font-display font-bold text-white">Estadísticas</h1>
-        <p className="text-slate-500 text-sm mt-0.5">Tu progreso en números 📊</p>
+        <p className="text-slate-500 text-sm mt-0.5">Resumen de tu actividad</p>
       </div>
 
-      {/* Main stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-        {[
-          { label: 'Tareas creadas', val: tasks.length, color: '#6366f1' },
-          { label: 'Completadas', val: completedTasks.length, color: '#10b981' },
-          { label: 'Tasa de éxito', val: `${rate}%`, color: rate > 70 ? '#10b981' : rate > 40 ? '#f59e0b' : '#ef4444' },
-          { label: 'Proyectos', val: projects.length, color: '#8b5cf6' },
-        ].map(s => (
-          <div key={s.label} className="card p-4 text-center">
-            <p className="text-3xl font-display font-bold" style={{ color: s.color }}>{s.val}</p>
-            <p className="text-xs text-slate-500 mt-1">{s.label}</p>
-          </div>
-        ))}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <Stat label="Total tareas"  value={tasks.length} />
+        <Stat label="Completadas"   value={completed.length} sub={`${rate}% del total`} />
+        <Stat label="Para hoy"      value={dueToday.length} />
+        <Stat label="Vencidas"      value={overdue.length} sub={overdue.length > 0 ? 'Requieren atención' : 'Al día'} />
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <Stat label="Pendientes"    value={pending.length} />
+        <Stat label="Esta semana"   value={thisWeek.length} sub="con fecha asignada" />
+        <Stat label="Proyectos"     value={projects.length} />
+        <Stat label="Tasa de éxito" value={`${rate}%`} sub={rate >= 70 ? 'Buen ritmo' : rate >= 40 ? 'Puede mejorar' : 'Empuja más'} />
       </div>
 
-      {/* Weekly activity */}
-      <div className="card p-5 mb-4">
-        <h2 className="text-sm font-semibold text-white mb-4">Actividad últimos 7 días</h2>
-        <div className="flex items-end gap-2 h-24">
-          {last7.map((d, i) => (
-            <div key={i} className="flex-1 flex flex-col items-center gap-1">
-              <div className="w-full relative" style={{ height: `${(d.count / maxCount) * 80}px`, minHeight: '4px' }}>
-                <div className="w-full h-full rounded-t-md bg-primary/30" />
-                {d.done > 0 && (
-                  <div className="absolute bottom-0 w-full rounded-t-md bg-primary"
-                    style={{ height: `${(d.done / Math.max(d.count, 1)) * 100}%` }} />
-                )}
-              </div>
-              <span className="text-xs text-slate-500">{d.date}</span>
-            </div>
-          ))}
-        </div>
-        <div className="flex gap-4 mt-3 text-xs text-slate-500">
-          <span className="flex items-center gap-1.5"><span className="w-3 h-2 rounded bg-primary inline-block" /> Completadas</span>
-          <span className="flex items-center gap-1.5"><span className="w-3 h-2 rounded bg-primary/30 inline-block" /> Total</span>
-        </div>
-      </div>
-
-      {/* By category */}
-      <div className="card p-5 mb-4">
-        <h2 className="text-sm font-semibold text-white mb-4">Por categoría</h2>
-        {byCategory.length === 0 ? (
-          <p className="text-slate-500 text-sm">Crea tareas para ver estadísticas.</p>
-        ) : (
-          <div className="space-y-3">
-            {byCategory.map(cat => (
-              <div key={cat.value}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm text-slate-300">{cat.emoji} {cat.label}</span>
-                  <span className="text-xs text-slate-500">{cat.done}/{cat.total}</span>
-                </div>
-                <div className="h-2 bg-surface rounded-full overflow-hidden">
-                  <div className="h-full rounded-full transition-all"
-                    style={{ width: `${(cat.done / cat.total) * 100}%`, background: cat.color }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Projects overview */}
       {projects.length > 0 && (
         <div className="card p-5">
-          <h2 className="text-sm font-semibold text-white mb-4">Progreso de proyectos</h2>
-          <div className="space-y-3">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Ingresos</h2>
+            <div className="flex border border-[#2a2a2a]">
+              {['USD', 'DOP'].map(c => (
+                <button key={c} onClick={() => setDisplayCurrency(c)}
+                  className={`px-3 py-1 text-xs font-mono transition-all ${displayCurrency === c ? 'bg-white text-black' : 'text-slate-500 hover:text-white'}`}>
+                  {c === 'USD' ? 'US$' : 'RD$'}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: 'Total portafolio', val: totalRevenue },
+              { label: 'Cobrado',          val: earnedRevenue },
+              { label: 'Por cobrar',       val: pendingRevenue },
+            ].map(s => (
+              <div key={s.label} className="bg-[#0a0a0a] border border-[#1e1e1e] p-4">
+                <p className="text-xs text-slate-500 mb-1">{s.label}</p>
+                <p className="text-lg font-mono font-bold text-white">{formatCurrency(s.val, displayCurrency)}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {tasks.length > 0 && (
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div className="card p-5">
+            <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Por categoría</h2>
+            <ResponsiveContainer width="100%" height={200}>
+              <PieChart>
+                <Pie data={byCategory} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} strokeWidth={0}>
+                  {byCategory.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="grid grid-cols-2 gap-1 mt-2">
+              {byCategory.map(c => (
+                <div key={c.name} className="flex items-center gap-2 text-xs text-slate-400">
+                  <span className="w-2 h-2 flex-shrink-0" style={{ background: c.color }} />
+                  <span>{c.name}</span>
+                  <span className="text-slate-600 ml-auto">{c.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="card p-5">
+            <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Por prioridad</h2>
+            <ResponsiveContainer width="100%" height={200}>
+              <PieChart>
+                <Pie data={byPriority} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={80} strokeWidth={0}>
+                  {byPriority.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="flex justify-center gap-4 mt-2">
+              {byPriority.map(p => (
+                <div key={p.name} className="flex items-center gap-1.5 text-xs text-slate-400">
+                  <span className="w-2 h-2" style={{ background: p.color }} />
+                  <span>{p.name} ({p.value})</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tasks.length > 0 && (
+        <div className="card p-5">
+          <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Actividad últimos 7 días</h2>
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={last7} barSize={12} barGap={4}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1e1e1e" vertical={false} />
+              <XAxis dataKey="day" tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
+              <Tooltip contentStyle={{ background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: 0, fontSize: 12 }} cursor={{ fill: '#ffffff08' }} />
+              <Bar dataKey="Pendientes"  fill="#3a3a3a" />
+              <Bar dataKey="Completadas" fill="#ffffff" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {projects.length > 0 && (
+        <div className="card p-5">
+          <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Progreso de proyectos</h2>
+          <div className="space-y-4">
             {projects.map(p => (
               <div key={p.id}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm text-slate-300">{p.name}</span>
-                  <span className="text-xs font-mono text-slate-500">{p.progress || 0}%</span>
+                <div className="flex items-center justify-between mb-1.5">
+                  <div>
+                    <span className="text-sm text-white">{p.name}</span>
+                    {p.client && <span className="text-xs text-slate-600 ml-2">{p.client}</span>}
+                  </div>
+                  <span className="text-xs font-mono text-slate-400">{p.progress || 0}%</span>
                 </div>
-                <div className="h-2 bg-surface rounded-full overflow-hidden">
-                  <div className="h-full rounded-full transition-all"
-                    style={{ width: `${p.progress || 0}%`, background: p.color || '#6366f1' }} />
+                <div className="h-px bg-[#1e1e1e]">
+                  <div className="h-full bg-white transition-all" style={{ width: `${p.progress || 0}%` }} />
                 </div>
               </div>
             ))}
           </div>
-          <div className="mt-4 pt-4 border-t border-surface-border flex justify-between text-sm">
-            <span className="text-slate-500">Ingresos totales</span>
-            <span className="text-accent-green font-mono font-medium">
-              ${projects.reduce((a, p) => a + (p.budget || 0), 0).toLocaleString()}
-            </span>
+          <div className="mt-4 pt-4 border-t border-[#1e1e1e]">
+            <p className="text-xs text-slate-500">
+              Progreso promedio:{' '}
+              <span className="text-white font-mono">
+                {Math.round(projects.reduce((a, p) => a + (p.progress || 0), 0) / projects.length)}%
+              </span>
+            </p>
           </div>
+        </div>
+      )}
+
+      {tasks.length === 0 && projects.length === 0 && (
+        <div className="text-center py-16 text-slate-600">
+          <p className="text-lg mb-2">Sin datos todavía</p>
+          <p className="text-sm">Crea tareas y proyectos para ver tus estadísticas.</p>
         </div>
       )}
     </div>

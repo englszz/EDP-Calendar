@@ -2,25 +2,17 @@
 module.exports = {
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
+    borderRadius: { none: '0', sm: '0', DEFAULT: '0', md: '0', lg: '0', xl: '0', '2xl': '0', '3xl': '0', full: '9999px' },
     extend: {
       colors: {
-        primary: { DEFAULT: '#6366f1', dark: '#4f46e5', light: '#818cf8' },
-        surface: { DEFAULT: '#0f0f14', card: '#16161f', border: '#252535' },
-        accent: { green: '#10b981', red: '#ef4444', yellow: '#f59e0b', blue: '#3b82f6' },
+        primary: { DEFAULT: '#ffffff', dark: '#e5e5e5' },
+        surface: { DEFAULT: '#0a0a0a', card: '#111111', border: '#222222' },
       },
       fontFamily: {
         display: ['DM Sans', 'sans-serif'],
         body: ['Inter', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
       },
-      animation: {
-        'fade-in': 'fadeIn 0.3s ease-out',
-        'slide-up': 'slideUp 0.3s ease-out',
-      },
-      keyframes: {
-        fadeIn: { from: { opacity: 0 }, to: { opacity: 1 } },
-        slideUp: { from: { opacity: 0, transform: 'translateY(12px)' }, to: { opacity: 1, transform: 'translateY(0)' } },
-      }
     },
   },
   plugins: [],
