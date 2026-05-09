@@ -1,7 +1,8 @@
 import { getToken } from 'firebase/messaging';
 import { messagingPromise } from '../config/firebase';
 
-const VAPID_KEY = 'BE36k2GMvRYdOFUXh9UrTVki4fG0dSTwsYeifw4tERSNYPe3Vwf_uShEkUNL7i0UehZhcfzsEf19Af8Frs2cOnY';
+const VAPID_KEY =
+  'BE36k2GMvRYdOFUXh9UrTVki4fG0dSTwsYeifw4tERSNYPe3Vwf_uShEkUNL7i0UehZhcfzsEf19Af8Frs2cOnY';
 
 export const requestNotificationPermission = async () => {
   console.log('🚀 requestNotificationPermission ejecutado');
@@ -21,13 +22,19 @@ export const requestNotificationPermission = async () => {
       return null;
     }
 
-    // Registrar manualmente el service worker
+    // Registrar service worker
     const registration = await navigator.serviceWorker.register(
       '/firebase-messaging-sw.js'
     );
 
     console.log('Service Worker registrado:', registration);
 
+    // Esperar a que esté activo
+    await navigator.serviceWorker.ready;
+
+    console.log('Service Worker activo y listo');
+
+    // Obtener token FCM
     const token = await getToken(messaging, {
       vapidKey: VAPID_KEY,
       serviceWorkerRegistration: registration,
