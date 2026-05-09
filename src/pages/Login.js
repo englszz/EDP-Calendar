@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { requestNotificationPermission } from '../utils/notifications';
 
 export default function Login() {
   const { signInWithGoogle } = useAuth();
@@ -13,6 +14,7 @@ export default function Login() {
     setLoading(true);
     try {
       await signInWithGoogle();
+      await requestNotificationPermission();
       navigate('/');
     } catch (err) {
       setError('No se pudo iniciar sesión. Intenta de nuevo.');
