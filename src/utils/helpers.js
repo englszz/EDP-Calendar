@@ -1,4 +1,4 @@
-import { format, isToday, isTomorrow, isPast, parseISO } from 'date-fns';
+import { format, isToday, isTomorrow, isPast } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export const formatDate = (date) => {
