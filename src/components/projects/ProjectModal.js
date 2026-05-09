@@ -17,7 +17,7 @@ export default function ProjectModal({ project, onSave, onClose }) {
     client: '',
     description: '',
     budget: '',
-    currency: 'USD',
+    currency: 'DOP',
     deadline: '',
     status: 'active',
     progress: 0,
@@ -28,9 +28,9 @@ export default function ProjectModal({ project, onSave, onClose }) {
       setForm(f => ({
         ...f,
         ...project,
-        budget: project.budget ?? '',
+        budget: project.budget != null ? String(project.budget) : '',
         deadline: project.deadline ?? '',
-        currency: project.currency ?? 'USD',
+        currency: project.currency ?? 'DOP',
         progress: project.progress ?? 0,
         status: project.status ?? 'active',
       }));
@@ -56,7 +56,7 @@ export default function ProjectModal({ project, onSave, onClose }) {
       <div className="absolute inset-0 bg-black/80" onClick={onClose} />
 
       <div className="relative w-full sm:max-w-lg bg-[#111111] border border-[#2a2a2a] p-6 animate-slide-up max-h-[90vh] overflow-y-auto">
-        
+
         {/* HEADER */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-base font-display font-semibold text-white">
@@ -82,7 +82,7 @@ export default function ProjectModal({ project, onSave, onClose }) {
 
             <input
               className="input"
-              placeholder="ej. Rediseño web AJ Dent"
+              placeholder="ej. Rediseño de mi Proyecto..."
               value={form.name}
               onChange={e => set('name', e.target.value)}
               required
@@ -92,7 +92,7 @@ export default function ProjectModal({ project, onSave, onClose }) {
 
           {/* CLIENT + STATUS */}
           <div className="grid grid-cols-2 gap-3">
-            
+
             <div>
               <label className="text-xs text-slate-500 uppercase tracking-wider mb-1.5 block">
                 Cliente
@@ -125,36 +125,40 @@ export default function ProjectModal({ project, onSave, onClose }) {
             </div>
           </div>
 
-          {/* BUDGET */}
+              {/* BUDGET - Presupuesto */}
           <div>
             <label className="text-xs text-slate-500 uppercase tracking-wider mb-1.5 block">
               Presupuesto
             </label>
 
-            <div className="flex items-center border border-[#2a2a2a] rounded-lg overflow-hidden">
+            <div className="flex items-center border border-[#2a2a2a] rounded-lg overflow-hidden bg-[0A0A0A]">
 
-              <span className="px-3 text-slate-400 text-sm">
+              <span className="px-4 py-3 text-slate-400 text-sm font-medium border-r border-[#2a2a2a]">
                 {currencySymbol[form.currency]}
               </span>
 
               <input
-                className="input flex-1 border-0"
+                className="flex-1 bg-[#0A0A0A] border-0 px-4 py-3 text-white outline-none text-base placeholder:text-slate-500"
                 type="text"
                 inputMode="decimal"
                 placeholder="0.00"
                 value={form.budget}
-                onChange={e => set('budget', e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[^0-9.]/g, '');
+                  if ((value.match(/\./g) || []).length <= 1) {
+                    set('budget', value);
+                  }
+                }}
               />
 
               <select
-                className="input w-24 border-l border-[#2a2a2a] text-slate-300 font-mono"
+                className="bg-[#0A0A0A] border-l border-[#2a2a2a] text-slate-300 px-3 py-3 outline-none appearance-none"
                 value={form.currency}
                 onChange={e => set('currency', e.target.value)}
               >
-                <option value="USD">USD</option>
                 <option value="DOP">DOP</option>
+                <option value="USD">USD</option>
               </select>
-
             </div>
           </div>
 

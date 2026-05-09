@@ -45,7 +45,7 @@ body {
 .input[type="time"],
 .date-input,
 .time-input {
-  color-scheme: dark;
+  color-scheme: rgb(255, 255, 255);
   cursor: pointer;
 }
 

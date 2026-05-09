@@ -41,8 +41,8 @@ export default function ProjectCard({ project, onEdit, onDelete }) {
         </div>
       </div>
 
-      {project.budget > 0 && (
-        <div className="flex items-center justify-between">
+      {Number(project.budget) > 0 && (
+          <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-mono font-medium text-white">
               {formatCurrency(project.budget, currency)}

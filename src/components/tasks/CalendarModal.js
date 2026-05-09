@@ -1,7 +1,34 @@
 import React from 'react';
-import { format } from 'date-fns';
+import { format, isSameDay, isToday, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { getCategoryInfo, getPriorityInfo, formatDate, isOverdue } from '../../utils/helpers';
+
+// ←←← Añade estas funciones si no las tienes importadas
+// (las necesitarás para que funcione)
+
+function getCategoryInfo(category) {
+  const categories = {
+    work: { label: "Trabajo", color: "#3b82f6" },
+    personal: { label: "Personal", color: "#8b5cf6" },
+    health: { label: "Salud", color: "#ec4899" },
+    study: { label: "Estudio", color: "#f59e0b" },
+    other: { label: "Otros", color: "#6b7280" },
+  };
+  return categories[category] || categories.other;
+}
+
+function getPriorityInfo(priority) {
+  const priorities = {
+    high: { label: "Alta", color: "#ef4444" },
+    medium: { label: "Media", color: "#f59e0b" },
+    low: { label: "Baja", color: "#22c55e" },
+  };
+  return priorities[priority] || priorities.medium;
+}
+
+function isOverdue(dueDate) {
+  if (!dueDate) return false;
+  return new Date(dueDate) < new Date(new Date().setHours(0,0,0,0));
+}
 
 export default function CalendarModal({ day, tasks, onClose, onSelectTask }) {
   if (!day) return null;
@@ -37,8 +64,11 @@ export default function CalendarModal({ day, tasks, onClose, onSelectTask }) {
                 const overdue = isOverdue(task.dueDate) && !task.completed;
 
                 return (
-                  <button key={task.id} onClick={() => { onSelectTask(task); onClose(); }}
-                    className={`w-full text-left card p-4 hover:border-[#333] transition-all ${task.completed ? 'opacity-40' : ''} ${overdue ? 'border-l-2 border-l-red-500' : ''}`}>
+                  <button 
+                    key={task.id} 
+                    onClick={() => { onSelectTask(task); onClose(); }}
+                    className={`w-full text-left card p-4 hover:border-[#333] transition-all ${task.completed ? 'opacity-40' : ''} ${overdue ? 'border-l-2 border-l-red-500' : ''}`}
+                  >
                     <div className="flex items-start gap-3">
                       <div className={`mt-0.5 w-4 h-4 border flex-shrink-0 flex items-center justify-center ${task.completed ? 'bg-white border-white' : 'border-[#444]'}`}>
                         {task.completed && (
