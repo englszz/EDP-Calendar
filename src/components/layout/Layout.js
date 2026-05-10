@@ -48,9 +48,7 @@ const Layout = () => {
           {/* LOGO */}
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 bg-white flex items-center justify-center flex-shrink-0">
-                <img src="/logo-transparent.png" alt="EDP" className="w-5 h-5 object-contain" />
-              </div>
+              <img src="/LOGOtransparente.png" alt="EDP" className="w-8 h-8 object-contain" />
 
               <span className="font-display font-bold text-base text-white tracking-tight">
                 EDP <span className="text-slate-400">Calendar</span>

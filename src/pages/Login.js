@@ -32,10 +32,9 @@ export default function Login() {
 
       <div className="relative w-full max-w-sm animate-fade-in text-center">
         {/* Logo */}
-        <div className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-primary/20 border border-primary/30 mb-5 shadow-lg shadow-primary/20">
-          <img src="/logo-transparent.png" alt="EDP Calendar" className="w-14 h-14 object-contain brightness-0 invert" />
-        </div>
-        <h1 className="text-3xl font-display font-bold text-white tracking-tight">EDP Calendar</h1>
+<div className="flex justify-center mb-5">
+  <img src="/LOGOtransparente.png" alt="EDP Calendar" className="w-24 h-24 object-contain" />
+</div>        <h1 className="text-3xl font-display font-bold text-white tracking-tight">EDP Calendar</h1>
         <p className="text-slate-500 mt-1 text-sm mb-10">Tu espacio de organización personal</p>
 
         <div className="card p-6">
