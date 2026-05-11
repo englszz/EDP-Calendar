@@ -1,13 +1,3 @@
-{
-  "type": "service_account",
-  "project_id": "edp-calendar-eb61d",
-  "private_key_id": "bb0d035965c1e61f158767902d38a2013077edf4",
-  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC5USa+Q0BcktUn\nlPQHYoE0/1LzXrA/Cu6XTcLcn0zYtMMqXqEEFLlniFSEDG7PhArkgK0ZKXA6R0c4\nSnPoMrxtuYaIzQkxpr1B3uSBXU7LTfybG6JX3awxgioAAJSvhRQDQdVWsaf1F+JF\nsd7mrWV3qFtPAf3Xfmx1SdXAPUBGOEv4G8ctOX7u/N8co9IBthByKOXiHH7TXoHa\nzNOQljAfZI5TG65xQxyOehLT5jXmMPcPUPEe1VjlcM9hHT5QEL8A3TxKy+266FQQ\nBki5+uEE113dqQGctdjZvgwLkDAnipKh8KaB2VajUNkG2Tbij9NDMB+PM3zK+PsF\n2yeV0/j9AgMBAAECggEAI1I1n3mLfKmK4Zy5J2gtxtdsbNENKDLx91o9rBXbzIkl\nkr+PEotNrE9WhoWlID3jYpqpA3z7tEvuJetA7M6wzfwYyZ3E5RcKBxJP/N03PbZL\nUZgCiRtJ7PTJgw8ZR9wGTLmhS0EYyXUILm8A1HhTuOsYnjY7tvVUgEV2rYmvJMLW\nkFRjA8CXbO4L6WvnRR62xNgNMcyZPiiImF7LojIDGO0lBB6xltH52KGWnGQboyre\nya6tSVqLxhd7t5H3W11hgFykL2tibPQoECpNi8+EsB+E6lfvYvofpbKco+AtCEXj\nI4pOXR6LFsgyQ8bdj2Rcs0VsnAsncmqVkflQ/J/6+QKBgQDj9jY+UyQP5un8WxPs\ntGn+2UNimOvA31+ERf+g1X3Uc2daPDa9P4DwJmKCaFZygeRkiG6i00l6nSbadsB1\nGaBr0O7AIlVpOychrYtvHkYreHQlh+UgfpF9Qx+yBO+cqm2IRI5eq+Wz65xSTQfv\nq7uF4+96MGJUDYBwz92z59UfRQKBgQDQHDEe9GqyYXHvyTnDqPVcBCMKi+iq6zlT\n3+pjHPFCVkLqikCvmhgH9yjHkNTIUfYt60gKWHDUGVdhGVJMrAZ8EYfJb5UAP0m8\nJB5LEVZFcQC9ItWrOsr8CDFi9OC3DsYF9xEn3GjJiudgfTPqamZZIhMIe1BrQhlw\n9z5qJVhSWQKBgE8/ZaYPAydgEBHBm9Ca+4oz/2AEZ1i6jpsONoq0DTVRFSniaukp\nbWqO/Yn2Oa8/BqYIY+XI6+9rOHmT9N4AlatFi+pRRT366WSkzydG7//mtQHjFz1P\nosZYEmmxm5bsDH3lz1SMD6OXkdVuoAaqvdsS3UquDVDJDNCrApirTIS9AoGAC1Yd\nzuPdlA3+2OMLRH9FrleDWSW57OWXX9xItlFzSvvL9V7Gm0o3mOd7zzMyhB8C3Al/\nCSE8NDGVMvLgKtEMIWILFYwAf9zytU76X3h4TJwVQDhPj15KhGQl3JAeVZp2awjE\nZHl7M89fP0BSvahCHwTeKI4fGVimbiLpwXp7TzECgYEAoS+fNnyReE3tK2k8JeIW\nckivQCZyfXTQwgTrApjkLownZsdshH63W7cT4egxr2ryTyXUStCHFriVjTqLVUxc\nJ5Y6NR1cecyP7PhlWO3AzQ5Na5WXtrDWQRVkzvDm8JiTILmSSuIjfXgYVfJ6n9W8\nTdl3ANEReTudiOkuJItGrb8=\n-----END PRIVATE KEY-----\n",
-  "client_email": "firebase-adminsdk-fbsvc@edp-calendar-eb61d.iam.gserviceaccount.com",
-  "client_id": "106632426468467166169",
-  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-  "token_uri": "https://oauth2.googleapis.com/token",
-  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40edp-calendar-eb61d.iam.gserviceaccount.com",
-  "universe_domain": "googleapis.com"
-}
+node_modules/
+.env
+*.json
