@@ -20,11 +20,9 @@ app.get("/", (req, res) => res.send("EDP Calendar server running"));
 // Run every minute
 cron.schedule("* * * * *", async () => {
   try {
-    const now = new Date();
-    // Adjust to RD time (UTC-4)
-    now.setHours(now.getHours() - 4);
-    const dateStr = now.toISOString().slice(0, 10);
-    const timeStr = now.toTimeString().slice(0, 5);
+   const now = new Date();
+    const dateStr = now.toLocaleDateString('en-CA', { timeZone: 'America/Santo_Domingo' });
+    const timeStr = now.toLocaleTimeString('en-US', { timeZone: 'America/Santo_Domingo', hour12: false, hour: '2-digit', minute: '2-digit' });
 
     console.log(`Checking reminders for ${dateStr} at ${timeStr}`);
 

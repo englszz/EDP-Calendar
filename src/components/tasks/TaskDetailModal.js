@@ -102,12 +102,12 @@ export default function TaskDetailModal({ task, onClose, onEdit, onDelete }) {
                   <button
                     onClick={handleNotifyNow}
                     className="w-full px-4 py-2 text-xs bg-blue-600/20 text-blue-400 border border-blue-900 hover:bg-blue-600/30 transition-all text-left">
-                    🔔 Notificar ahora
+                    Notificar ahora
                   </button>
                   <button
                     onClick={handleScheduleReminder}
                     className="w-full px-4 py-2 text-xs bg-orange-600/20 text-orange-400 border border-orange-900 hover:bg-orange-600/30 transition-all text-left">
-                    ⏰ Programar recordatorio (30 min antes)
+                    Programar recordatorio (30 min antes)
                   </button>
                 </>
               )}

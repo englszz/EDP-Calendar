@@ -25,13 +25,14 @@ export const useTasks = () => {
     return unsub;
   }, [user]);
 
-  const addTask = (data) =>
-    addDoc(collection(db, 'tasks'), {
-      ...data,
-      uid: user.uid,
-      completed: false,
-      createdAt: serverTimestamp(),
-    });
+const addTask = (data) =>
+  addDoc(collection(db, 'tasks'), {
+    ...data,
+    uid: user.uid,
+    completed: false,
+    reminderSent: false,
+    createdAt: serverTimestamp(),
+  });
 
   const updateTask = (id, data) => updateDoc(doc(db, 'tasks', id), data);
   const deleteTask = (id) => deleteDoc(doc(db, 'tasks', id));
