@@ -11,6 +11,9 @@ import proyectosWhite from '../../components/icons/proyectoswhite.png';
 import estadisticas from '../../components/icons/estadisticas.png';
 import estadisticasWhite from '../../components/icons/estadisticaswhite.png';
 
+import finanzas from '../../components/icons/Finanzas1.png';
+import finanzasWhite from '../../components/icons/Finanzas2.png';
+
 const navLinks = [
   {
     to: '/',
@@ -30,6 +33,12 @@ const navLinks = [
     label: 'Estadísticas',
     icon: estadisticas,
     iconActive: estadisticasWhite,
+  },
+  {
+  to: '/finance',
+  label: 'Finanzas',
+  icon: finanzas,
+  iconActive: finanzasWhite
   },
 ];
 

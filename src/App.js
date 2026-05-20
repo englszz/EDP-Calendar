@@ -6,6 +6,7 @@ import Projects from './pages/Projects';
 import Stats from './pages/Stats';
 import Login from './pages/Login';
 import { AuthProvider } from './hooks/useAuth';
+import Finance from './pages/Finance';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
             <Route index element={<Home />} />
             <Route path="projects" element={<Projects />} />
             <Route path="stats" element={<Stats />} />
+            <Route path="finance" element={<Finance />} />
           </Route>
         </Routes>
       </Router>
