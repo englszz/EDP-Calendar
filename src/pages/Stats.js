@@ -133,7 +133,8 @@ Sin markdown, sin asteriscos, sin guiones. Solo 4 líneas. Máximo 25 palabras p
     });
 
     const data = await response.json();
-    const text = data.choices?.[0]?.message?.content || 'No se pudieron generar insights.';
+console.log('Groq response:', JSON.stringify(data));
+const text = data.choices?.[0]?.message?.content || 'No se pudieron generar insights.';
     setAiInsights(text);
   } catch (err) {
     setAiInsights('Error al conectar con el asistente. Intenta de nuevo.');
