@@ -113,8 +113,8 @@ export default function Stats() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'llama3-8b-8192',
-        messages: [
+      model: 'llama-3.3-70b-versatile',
+      messages: [
           {
             role: 'system',
             content: `Eres un asistente financiero y de productividad para EDP Calendar.
