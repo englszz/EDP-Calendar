@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useFinance, DEFAULT_CATEGORIES, getCategoryInfo } from '../hooks/useFinance';
+import { useFinance, getCategoryInfo } from '../hooks/useFinance';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
