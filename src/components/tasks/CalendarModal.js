@@ -36,7 +36,7 @@ export default function CalendarModal({ day, tasks, onClose, onSelectTask }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-black/80" onClick={onClose} />
-      <div className="relative w-full sm:max-w-md bg-[#111111] border border-[#2a2a2a] animate-slide-up max-h-[80vh] flex flex-col">
+      <div className="relative w-full sm:max-w-md bg-card border border-[#2a2a2a] animate-slide-up max-h-[80vh] flex flex-col">
 
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-[#1e1e1e]">
@@ -67,10 +67,11 @@ export default function CalendarModal({ day, tasks, onClose, onSelectTask }) {
                     className={`w-full text-left card p-4 hover:border-[#333] transition-all ${task.completed ? 'opacity-40' : ''} ${overdue ? 'border-l-2 border-l-red-500' : ''}`}
                   >
                     <div className="flex items-start gap-3">
-                      <div className={`mt-0.5 w-4 h-4 border flex-shrink-0 flex items-center justify-center ${task.completed ? 'bg-white border-white' : 'border-[#444]'}`}>
+                      <div className={`mt-0.5 w-4 h-4 border flex-shrink-0 flex items-center justify-center ${task.completed ? '' : 'border-[#444]'}`}
+                           style={task.completed ? { backgroundColor: 'var(--accent)', borderColor: 'var(--accent)' } : {}}>
                         {task.completed && (
                           <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 12 12">
-                            <path d="M2 6l3 3 5-5" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M2 6l3 3 5-5" stroke="var(--text-on-accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                           </svg>
                         )}
                       </div>

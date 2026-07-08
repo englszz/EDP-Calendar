@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { formatDate, isOverdue, formatCurrency, convertCurrency } from '../../utils/helpers';
 
 const STATUS_LABELS = { active: 'Activo', paused: 'Pausado', completed: 'Completado' };
@@ -10,7 +11,16 @@ export default function ProjectCard({ project, onEdit, onDelete }) {
   const altAmount = convertCurrency(project.budget || 0, currency, altCurrency);
 
   return (
-    <div className="card p-5 hover:border-[#333] transition-all group cursor-pointer" onClick={() => onEdit(project)}>
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 8, scale: 0.98 }}
+      whileHover={{ y: -2 }}
+      transition={{ type: 'spring', stiffness: 360, damping: 32 }}
+      className="card p-5 hover:border-[#333] transition-all group cursor-pointer"
+      onClick={() => onEdit(project)}
+    >
       <div className="flex items-start justify-between mb-4">
         <div>
           <h3 className="text-white font-semibold text-sm leading-tight">{project.name}</h3>
@@ -37,7 +47,7 @@ export default function ProjectCard({ project, onEdit, onDelete }) {
           <span className="text-xs font-mono text-slate-400">{project.progress || 0}%</span>
         </div>
         <div className="h-px bg-[#222] overflow-hidden">
-          <div className="h-full bg-white transition-all" style={{ width: `${project.progress || 0}%` }} />
+          <div className="h-full transition-all" style={{ width: `${project.progress || 0}%`, backgroundColor: 'var(--accent)' }} />
         </div>
       </div>
 
@@ -58,6 +68,6 @@ export default function ProjectCard({ project, onEdit, onDelete }) {
           )}
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }

@@ -55,7 +55,7 @@ export default function ProjectModal({ project, onSave, onClose }) {
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-black/80" onClick={onClose} />
 
-      <div className="relative w-full sm:max-w-lg bg-[#111111] border border-[#2a2a2a] p-6 animate-slide-up max-h-[90vh] overflow-y-auto">
+      <div className="relative w-full sm:max-w-lg bg-card border border-[#2a2a2a] p-6 animate-slide-up max-h-[90vh] overflow-y-auto">
 
         {/* HEADER */}
         <div className="flex items-center justify-between mb-6">
@@ -138,7 +138,7 @@ export default function ProjectModal({ project, onSave, onClose }) {
               </span>
 
               <input
-                className="flex-1 bg-[#0A0A0A] border-0 px-4 py-3 text-white outline-none text-base placeholder:text-slate-500"
+                className="flex-1 bg-base border-0 px-4 py-3 text-white outline-none text-base placeholder:text-slate-500"
                 type="text"
                 inputMode="decimal"
                 placeholder="0.00"
@@ -152,7 +152,7 @@ export default function ProjectModal({ project, onSave, onClose }) {
               />
 
               <select
-                className="bg-[#0A0A0A] border-l border-[#2a2a2a] text-slate-300 px-3 py-3 outline-none appearance-none"
+                className="bg-base border-l border-[#2a2a2a] text-slate-300 px-3 py-3 outline-none appearance-none"
                 value={form.currency}
                 onChange={e => set('currency', e.target.value)}
               >

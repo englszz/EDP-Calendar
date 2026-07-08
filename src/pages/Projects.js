@@ -1,11 +1,14 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import { useProjects } from '../hooks/useProjects';
 import { useTasks } from '../hooks/useTasks';
+import { useFinance } from '../hooks/useFinance';
 import ProjectCard from '../components/projects/ProjectCard';
 import ProjectModal from '../components/projects/ProjectModal';
 import TaskModal from '../components/tasks/TaskModal';
 import TaskCard from '../components/tasks/TaskCard';
-import cohete from '../components/icons/cohete.png';
+import TaskDetailModal from '../components/tasks/TaskDetailModal';
+import EmptyState from '../components/ui/EmptyState';
 
 const STATUS_TABS = ['all', 'active', 'paused', 'completed'];
 const STATUS_LABELS = {
@@ -18,12 +21,14 @@ const STATUS_LABELS = {
 export default function Projects() {
   const { projects, loading, addProject, updateProject, deleteProject } = useProjects();
   const { tasks, addTask, updateTask, deleteTask, toggleTask } = useTasks();
+  const { addTransaction, allCategories } = useFinance();
 
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [editProject, setEditProject] = useState(null);
   const [selectedProject, setSelectedProject] = useState(null);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [editTask, setEditTask] = useState(null);
+  const [detailTask, setDetailTask] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
 
   const filteredProjects = useMemo(() =>
@@ -43,6 +48,24 @@ export default function Projects() {
   const pendingRevenue = projects
     .filter(p => p.status === 'active')
     .reduce((a, p) => a + (p.budget || 0), 0);
+
+  const projectProgress = useMemo(() => {
+    return projects.reduce((acc, project) => {
+      const linkedTasks = tasks.filter(task => task.projectId === project.id);
+      const completed = linkedTasks.filter(task => task.completed).length;
+      acc[project.id] = linkedTasks.length ? Math.round((completed / linkedTasks.length) * 100) : 0;
+      return acc;
+    }, {});
+  }, [projects, tasks]);
+
+  useEffect(() => {
+    projects.forEach(project => {
+      const nextProgress = projectProgress[project.id] || 0;
+      if ((project.progress || 0) !== nextProgress) {
+        updateProject(project.id, { progress: nextProgress });
+      }
+    });
+  }, [projects, projectProgress, updateProject]);
 
   const handleSaveProject = (data) => {
     if (editProject) {
@@ -72,6 +95,24 @@ export default function Projects() {
       });
     }
     setEditTask(null);
+  };
+
+  const handleCreateExpenseFromTask = async (task, expense) => {
+    const transactionRef = await addTransaction({
+      amount: expense.amount,
+      category: expense.category,
+      description: expense.description || task.title,
+      date: new Date().toISOString().slice(0, 10),
+      type: 'expense',
+      taskId: task.id,
+      projectId: task.projectId || selectedProject?.id || null,
+      source: 'task',
+    });
+
+    await updateTask(task.id, {
+      expenseId: transactionRef.id,
+      expenseAmount: expense.amount,
+    });
   };
 
   return (
@@ -119,9 +160,10 @@ export default function Projects() {
             onClick={() => setStatusFilter(tab)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
               statusFilter === tab
-                ? 'bg-primary text-black border-primary'
+                ? ''
                 : 'bg-surface-card text-slate-400 hover:text-white border-surface-border'
             }`}
+            style={statusFilter === tab ? { backgroundColor: 'var(--accent)', color: 'var(--text-on-accent)', borderColor: 'var(--accent)' } : {}}
           >
             {STATUS_LABELS[tab]}
           </button>
@@ -134,22 +176,34 @@ export default function Projects() {
         {loading ? (
           <p className="text-slate-500 col-span-3 text-center py-8">Cargando...</p>
         ) : filteredProjects.length === 0 ? (
-          <div className="col-span-3 text-center py-12">
-            <img src={cohete} alt="cohete" className="w-12 h-12 mx-auto mb-3" />
-            <p className="text-slate-400">No hay proyectos aún. ¡Crea el primero!</p>
+          <div className="col-span-3">
+            <EmptyState
+              iconClass="bi-rocket-takeoff"
+              title={statusFilter === 'all' ? 'Todavia no hay proyectos' : `Sin proyectos ${STATUS_LABELS[statusFilter].toLowerCase()}`}
+              description={statusFilter === 'all'
+                ? 'Crea tu primer proyecto para agrupar tareas, clientes e ingresos desde un solo lugar.'
+                : 'Cambia el filtro o crea un nuevo proyecto cuando quieras mover algo a esta etapa.'}
+              actionLabel="Nuevo proyecto"
+              onAction={() => {
+                setEditProject(null);
+                setShowProjectModal(true);
+              }}
+            />
           </div>
         ) : (
-          filteredProjects.map(p => (
-            <ProjectCard
-              key={p.id}
-              project={p}
-              onEdit={(proj) => {
-                setSelectedProject(proj);
-                handleEditProject(proj);
-              }}
-              onDelete={deleteProject}
-            />
-          ))
+          <AnimatePresence initial={false}>
+            {filteredProjects.map(p => (
+              <ProjectCard
+                key={p.id}
+                project={p}
+                onEdit={(proj) => {
+                  setSelectedProject(proj);
+                  handleEditProject(proj);
+                }}
+                onDelete={deleteProject}
+              />
+            ))}
+          </AnimatePresence>
         )}
 
       </div>
@@ -189,23 +243,33 @@ export default function Projects() {
           </div>
 
           {projectTasks.length === 0 ? (
-            <p className="text-slate-500 text-sm text-center py-6">
-              No hay tareas en este proyecto.
-            </p>
+            <EmptyState
+              iconClass="bi-list-check"
+              title="Proyecto sin tareas"
+              description="Agrega el siguiente paso para que el progreso de este proyecto empiece a moverse."
+              actionLabel="Agregar tarea"
+              onAction={() => {
+                setEditTask(null);
+                setShowTaskModal(true);
+              }}
+            />
           ) : (
             <div className="space-y-2">
-              {projectTasks.map(task => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  onToggle={toggleTask}
-                  onEdit={(t) => {
-                    setEditTask(t);
-                    setShowTaskModal(true);
-                  }}
-                  onDelete={deleteTask}
-                />
-              ))}
+              <AnimatePresence initial={false}>
+                {projectTasks.map(task => (
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    onToggle={toggleTask}
+                    onClick={setDetailTask}
+                    onEdit={(t) => {
+                      setEditTask(t);
+                      setShowTaskModal(true);
+                    }}
+                    onDelete={deleteTask}
+                  />
+                ))}
+              </AnimatePresence>
             </div>
           )}
 
@@ -232,6 +296,23 @@ export default function Projects() {
             setShowTaskModal(false);
             setEditTask(null);
           }}
+        />
+      )}
+
+      {detailTask && (
+        <TaskDetailModal
+          task={detailTask}
+          onClose={() => setDetailTask(null)}
+          onEdit={(t) => {
+            setEditTask(t);
+            setShowTaskModal(true);
+          }}
+          onDelete={(id) => {
+            deleteTask(id);
+            setDetailTask(null);
+          }}
+          onCreateExpense={handleCreateExpenseFromTask}
+          financeCategories={allCategories}
         />
       )}
 

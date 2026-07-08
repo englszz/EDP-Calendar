@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { requestNotificationPermission } from '../utils/notifications';
+import { useTheme } from '../hooks/useTheme';
 
 export default function Login() {
   const { signInWithGoogle } = useAuth();
+  const { hasChosenTheme } = useTheme();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -14,8 +16,19 @@ export default function Login() {
     setLoading(true);
     try {
       await signInWithGoogle();
-      await requestNotificationPermission();
-      navigate('/');
+      
+      try {
+        await requestNotificationPermission();
+      } catch (e) {
+        // Ignorar si el usuario deniega las notificaciones
+      }
+      
+      // Si no ha elegido tema, forzamos a que pase por el ColorPicker
+      if (!hasChosenTheme) {
+        navigate('/color-picker');
+      } else {
+        navigate('/');
+      }
     } catch (err) {
       setError('No se pudo iniciar sesión. Intenta de nuevo.');
     } finally {

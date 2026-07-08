@@ -28,6 +28,7 @@ export const useFinance = () => {
   const [budgets, setBudgetsState] = useState([]);
   const [recurring, setRecurring] = useState([]);
   const [customCategories, setCustomCategories] = useState([]);
+  const [savingGoals, setSavingGoals] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const currentMonth = format(new Date(), 'yyyy-MM');
@@ -47,6 +48,7 @@ export const useFinance = () => {
       orderBy('createdAt', 'desc')
     );
     const cQuery = query(collection(db, 'categories'), where('uid', '==', user.uid));
+    const sQuery = query(collection(db, 'savingGoals'), where('uid', '==', user.uid));
 
     const unsubT = onSnapshot(tQuery, snap => {
       setTransactions(snap.docs.map(d => ({ id: d.id, ...d.data() })));
@@ -55,8 +57,11 @@ export const useFinance = () => {
     const unsubB = onSnapshot(bQuery, snap => setBudgetsState(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
     const unsubR = onSnapshot(rQuery, snap => setRecurring(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
     const unsubC = onSnapshot(cQuery, snap => setCustomCategories(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+    const unsubS = onSnapshot(sQuery, snap => {
+      setSavingGoals(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
 
-    return () => { unsubT(); unsubB(); unsubR(); unsubC(); };
+    return () => { unsubT(); unsubB(); unsubR(); unsubC(); unsubS(); };
   }, [user]);
 
   const allCategories = [...DEFAULT_CATEGORIES, ...customCategories];
@@ -121,6 +126,23 @@ export const useFinance = () => {
     addDoc(collection(db, 'categories'), { ...data, uid: user.uid, createdAt: serverTimestamp() });
   const deleteCategory = (id) => deleteDoc(doc(db, 'categories', id));
 
+  // Saving goals
+  const addSavingGoal = (data) =>
+    addDoc(collection(db, 'savingGoals'), {
+      ...data,
+      targetAmount: Number(data.targetAmount),
+      savedAmount: Number(data.savedAmount || 0),
+      uid: user.uid,
+      createdAt: serverTimestamp(),
+    });
+
+  const updateSavingGoal = (id, data) => updateDoc(doc(db, 'savingGoals', id), data);
+  const deleteSavingGoal = (id) => deleteDoc(doc(db, 'savingGoals', id));
+  const contributeToSavingGoal = (goal, amount) =>
+    updateDoc(doc(db, 'savingGoals', goal.id), {
+      savedAmount: Number(goal.savedAmount || 0) + Number(amount),
+    });
+
   // Computed
   const monthTransactions = transactions.filter(t => t.date?.startsWith(currentMonth));
   const totalExpenses = monthTransactions
@@ -133,11 +155,12 @@ export const useFinance = () => {
       .reduce((a, t) => a + t.amount, 0);
 
   return {
-    transactions, monthTransactions, budgets, recurring,
+    transactions, monthTransactions, budgets, recurring, savingGoals,
     customCategories, allCategories, loading,
     addTransaction, updateTransaction, deleteTransaction,
     setBudget, getBudget, deleteBudget,
     addRecurring, updateRecurring, deleteRecurring,
+    addSavingGoal, updateSavingGoal, deleteSavingGoal, contributeToSavingGoal,
     addCategory, deleteCategory,
     totalExpenses, currentMonth, getSpentByCategory,
   };

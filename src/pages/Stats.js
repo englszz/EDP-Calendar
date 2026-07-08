@@ -26,7 +26,7 @@ const CustomTooltip = ({ active, payload }) => {
 export default function Stats() {
   const { tasks } = useTasks();
   const { projects } = useProjects();
-  const { monthTransactions, recurring, allCategories, customCategories, totalExpenses, getSpentByCategory } = useFinance();
+  const { monthTransactions, budgets, recurring, savingGoals, allCategories, customCategories, totalExpenses, getSpentByCategory } = useFinance();
   const [displayCurrency, setDisplayCurrency] = useState('USD');
   const [aiInsights, setAiInsights] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
@@ -85,6 +85,27 @@ export default function Stats() {
   const totalRecurring = recurring.reduce((a, r) => a + r.amount, 0);
   const recurringPaid = recurring.filter(r => r.status === 'paid').reduce((a, r) => a + r.amount, 0);
   const recurringPending = totalRecurring - recurringPaid;
+  const subscriptionKeywords = ['netflix', 'spotify', 'youtube', 'icloud', 'google', 'gym', 'gimnasio', 'adobe', 'chatgpt', 'openai'];
+  const subscriptions = recurring.filter(r => subscriptionKeywords.some(k => `${r.name || ''}`.toLowerCase().includes(k)));
+  const subscriptionTotal = subscriptions.reduce((a, r) => a + Number(r.amount || 0), 0);
+  const budgetStatus = budgets.map(b => {
+    const cat = getCategoryInfo(b.category, customCategories);
+    const spent = getSpentByCategory(b.category);
+    const percent = b.amount > 0 ? Math.round((spent / b.amount) * 100) : 0;
+    return { categoria: cat.label, limite: b.amount, gastado: spent, porcentaje: percent };
+  }).filter(b => b.limite > 0);
+  const savingsProgress = savingGoals.map(goal => ({
+    meta: goal.name,
+    objetivo: goal.targetAmount,
+    ahorrado: goal.savedAmount || 0,
+    porcentaje: goal.targetAmount > 0 ? Math.round(((goal.savedAmount || 0) / goal.targetAmount) * 100) : 0,
+  }));
+  const activeProjectRevenueDop = projects
+    .filter(p => p.status === 'active')
+    .reduce((a, p) => a + convertCurrency(p.budget || 0, p.currency || 'USD', 'DOP'), 0);
+  const daysLeftInMonth = Math.max(1, new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate() - new Date().getDate());
+  const dailyBurn = totalExpenses / Math.max(1, new Date().getDate());
+  const projectedMonthSpend = Math.round(totalExpenses + dailyBurn * daysLeftInMonth);
 
   // ── Revenue (projects) ──────────────────────────────────────
   const toDisplay = (amount, currency) => convertCurrency(amount, currency || 'USD', displayCurrency);
@@ -102,6 +123,12 @@ export default function Stats() {
     gastosPorCategoria: spendingByCategory.map(c => ({ categoria: c.name, monto: c.value })),
     gastosFijos: totalRecurring,
     gastosFijosPendientes: recurringPending,
+    suscripcionesDetectadas: subscriptions.map(s => ({ nombre: s.name, monto: s.amount })),
+    totalSuscripciones: subscriptionTotal,
+    presupuestos: budgetStatus,
+    metasAhorro: savingsProgress,
+    proyeccionGastoFinDeMes: projectedMonthSpend,
+    ingresosPendientesProyectosDOP: Math.round(activeProjectRevenueDop),
     tareasCompletadas: completed.length,
     tareasPendientes: pending.length,
     tasaCompletacion: `${rate}%`,
@@ -118,9 +145,10 @@ export default function Stats() {
           {
             role: 'system',
             content: `Eres un asistente financiero y de productividad para EDP Calendar.
-Analiza los datos y genera exactamente 4 insights útiles en español informal dominicano.
-Cada insight en una línea separada, empieza con un emoji relevante, sé específico con números.
-Sin markdown, sin asteriscos, sin guiones. Solo 4 líneas. Máximo 25 palabras por insight.`,
+Analiza productividad, presupuestos, suscripciones, metas de ahorro y flujo de caja proyectado.
+Genera exactamente 4 insights utiles en espanol informal dominicano.
+Cada insight en una linea separada, empieza con un emoji relevante, se especifico con numeros y avisa riesgos de presupuesto si aplica.
+Sin markdown, sin asteriscos, sin guiones. Solo 4 lineas. Maximo 25 palabras por insight.`,
           },
           {
             role: 'user',
@@ -164,7 +192,8 @@ const text = data.choices?.[0]?.message?.content || 'No se pudieron generar insi
       <div className="flex border border-[#2a2a2a]">
         {SECTIONS.map(s => (
           <button key={s} onClick={() => setActiveSection(s)}
-            className={`flex-1 py-2 text-xs font-medium transition-all ${activeSection === s ? 'bg-white text-black' : 'text-slate-500 hover:text-white'}`}>
+            className={`flex-1 py-2 text-xs font-medium transition-all rounded-md ${activeSection === s ? '' : 'text-slate-500 hover:text-white'}`}
+            style={activeSection === s ? { backgroundColor: 'var(--accent)', color: 'var(--text-on-accent)' } : {}}>
             {SECTION_LABELS[s]}
           </button>
         ))}
@@ -193,7 +222,9 @@ const text = data.choices?.[0]?.message?.content || 'No se pudieron generar insi
                 <div className="flex border border-[#2a2a2a]">
                   {['USD', 'DOP'].map(c => (
                     <button key={c} onClick={() => setDisplayCurrency(c)}
-                      className={`px-3 py-1 text-xs font-mono transition-all ${displayCurrency === c ? 'bg-white text-black' : 'text-slate-500 hover:text-white'}`}>
+                      className={`px-3 py-1 text-xs font-mono transition-all rounded-md ${displayCurrency === c ? '' : 'text-slate-500 hover:text-white'}`}
+                      style={displayCurrency === c ? { backgroundColor: 'var(--accent)', color: 'var(--text-on-accent)' } : {}}
+                    >
                       {c === 'USD' ? 'US$' : 'RD$'}
                     </button>
                   ))}
@@ -205,7 +236,7 @@ const text = data.choices?.[0]?.message?.content || 'No se pudieron generar insi
                   { label: 'Cobrado',          val: earnedRevenue },
                   { label: 'Por cobrar',       val: pendingRevenue },
                 ].map(s => (
-                  <div key={s.label} className="bg-[#0a0a0a] border border-[#1e1e1e] p-4">
+                  <div key={s.label} className="bg-base border border-[#1e1e1e] p-4">
                     <p className="text-xs text-slate-500 mb-1">{s.label}</p>
                     <p className="text-lg font-mono font-bold text-white">{formatCurrency(s.val, displayCurrency)}</p>
                   </div>
@@ -289,7 +320,7 @@ const text = data.choices?.[0]?.message?.content || 'No se pudieron generar insi
                       <span className="text-xs font-mono text-slate-400">{p.progress || 0}%</span>
                     </div>
                     <div className="h-px bg-[#1e1e1e]">
-                      <div className="h-full bg-white transition-all" style={{ width: `${p.progress || 0}%` }} />
+                      <div className="h-full transition-all" style={{ width: `${p.progress || 0}%`, backgroundColor: 'var(--accent)' }} />
                     </div>
                   </div>
                 ))}
@@ -308,6 +339,10 @@ const text = data.choices?.[0]?.message?.content || 'No se pudieron generar insi
             <Stat label="Gastos fijos" value={`RD$${totalRecurring.toLocaleString()}`} sub="al mes" />
             <Stat label="Fijos pagados" value={`RD$${recurringPaid.toLocaleString()}`} sub={`de RD$${totalRecurring.toLocaleString()}`} />
             <Stat label="Fijos pendientes" value={`RD$${recurringPending.toLocaleString()}`} sub={recurringPending > 0 ? 'Por pagar' : 'Todo pagado'} />
+            <Stat label="Suscripciones" value={`RD$${subscriptionTotal.toLocaleString()}`} sub={`${subscriptions.length} detectadas`} />
+            <Stat label="Proyeccion mensual" value={`RD$${projectedMonthSpend.toLocaleString()}`} sub="si sigues igual" />
+            <Stat label="Metas de ahorro" value={savingGoals.length} sub={`RD$${savingGoals.reduce((a, g) => a + Number(g.savedAmount || 0), 0).toLocaleString()} ahorrado`} />
+            <Stat label="Presupuestos" value={budgetStatus.length} sub={`${budgetStatus.filter(b => b.porcentaje >= 80).length} en alerta`} />
           </div>
 
           {/* Top categoría */}
@@ -405,7 +440,7 @@ const text = data.choices?.[0]?.message?.content || 'No se pudieron generar insi
             {aiInsights && !aiLoading && (
               <div className="space-y-3">
                 {aiInsights.split('\n').filter(l => l.trim()).map((line, i) => (
-                  <div key={i} className="flex items-start gap-3 p-3 bg-[#0a0a0a] border border-[#1e1e1e]">
+                  <div key={i} className="flex items-start gap-3 p-3 bg-base border border-[#1e1e1e]">
                     <p className="text-sm text-slate-300 leading-relaxed">{line}</p>
                   </div>
                 ))}

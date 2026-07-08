@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { formatDate, isOverdue, getCategoryInfo, getPriorityInfo } from '../../utils/helpers';
 import { isIOS, showNotification, addTaskToCalendar } from '../../utils/notifications';
 import { CalendarIcon, BellIcon, EditIcon, TrashIcon } from '../icons/Icons';
@@ -29,20 +30,38 @@ export default function TaskCard({ task, onToggle, onClick, onEdit, onDelete }) 
   };
 
   return (
-    <div
-      onClick={() => onClick(task)}
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: task.completed ? 0.45 : 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 8, scale: 0.98 }}
+      whileHover={{ y: -1 }}
+      transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+      onClick={() => onClick?.(task)}
       className={`card p-4 flex gap-3 group transition-all hover:border-[#333] cursor-pointer ${task.completed ? 'opacity-40' : ''} ${overdue ? 'border-l-2 border-l-red-500' : ''}`}>
-      <button
+      <motion.button
+        whileTap={{ scale: 0.78 }}
         onClick={(e) => { e.stopPropagation(); onToggle(task.id, task.completed); }}
         className={`mt-0.5 flex-shrink-0 w-4 h-4 border transition-all flex items-center justify-center ${
-          task.completed ? 'bg-white border-white' : 'border-[#444] hover:border-white'
-        }`}>
-        {task.completed && (
-          <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 12 12">
-            <path d="M2 6l3 3 5-5" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        )}
-      </button>
+          task.completed ? '' : 'border-[#444] hover:border-white'
+        }`}
+        style={task.completed ? { backgroundColor: 'var(--accent)', borderColor: 'var(--accent)' } : {}}>
+        <AnimatePresence>
+          {task.completed && (
+            <motion.svg
+              className="w-2.5 h-2.5"
+              fill="none"
+              viewBox="0 0 12 12"
+              initial={{ opacity: 0, scale: 0.4, rotate: -20 }}
+              animate={{ opacity: 1, scale: 1, rotate: 0 }}
+              exit={{ opacity: 0, scale: 0.4 }}
+              transition={{ type: 'spring', stiffness: 520, damping: 24 }}
+            >
+              <path d="M2 6l3 3 5-5" stroke="var(--text-on-accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </motion.svg>
+          )}
+        </AnimatePresence>
+      </motion.button>
 
       <div className="flex-1 min-w-0">
         <p className={`text-sm font-medium text-white leading-snug ${task.completed ? 'line-through text-slate-500' : ''}`}>
@@ -94,6 +113,6 @@ export default function TaskCard({ task, onToggle, onClick, onEdit, onDelete }) 
           <span className="hidden sm:inline">Borrar</span>
         </button>
       </div>
-    </div>
+    </motion.div>
   );
 }

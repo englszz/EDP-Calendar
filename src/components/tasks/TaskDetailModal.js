@@ -1,8 +1,33 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { getCategoryInfo, getPriorityInfo, formatDate, isOverdue } from '../../utils/helpers';
 import { isIOS, showNotification, addTaskToCalendar, scheduleTaskReminder } from '../../utils/notifications';
 
-export default function TaskDetailModal({ task, onClose, onEdit, onDelete }) {
+export default function TaskDetailModal({ task, onClose, onEdit, onDelete, onCreateExpense, financeCategories = [] }) {
+  const [showExpenseForm, setShowExpenseForm] = useState(false);
+  const [expenseForm, setExpenseForm] = useState({
+    amount: '',
+    category: financeCategories[0]?.value || 'servicios',
+    description: task?.title ? `Gasto: ${task.title}` : '',
+  });
+  const [savingExpense, setSavingExpense] = useState(false);
+
+  useEffect(() => {
+    if (!financeCategories.length) return;
+    setExpenseForm(form => ({
+      ...form,
+      category: financeCategories.some(category => category.value === form.category)
+        ? form.category
+        : financeCategories[0].value,
+    }));
+  }, [financeCategories]);
+
+  useEffect(() => {
+    setExpenseForm(form => ({
+      ...form,
+      description: task?.title ? `Gasto: ${task.title}` : form.description,
+    }));
+  }, [task?.id, task?.title]);
+
   if (!task) return null;
 
   const cat = getCategoryInfo(task.category);
@@ -31,23 +56,42 @@ export default function TaskDetailModal({ task, onClose, onEdit, onDelete }) {
     addTaskToCalendar(task);
   };
 
+  const handleExpenseSubmit = async (e) => {
+    e.preventDefault();
+    if (!expenseForm.amount || !onCreateExpense) return;
+    setSavingExpense(true);
+    await onCreateExpense(task, {
+      ...expenseForm,
+      amount: Number(expenseForm.amount),
+    });
+    setSavingExpense(false);
+    setShowExpenseForm(false);
+  };
+
+  const setExpense = (key, value) => {
+    setExpenseForm(form => ({ ...form, [key]: value }));
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-black/80" onClick={onClose} />
-      <div className="relative w-full sm:max-w-md bg-[#111111] border border-[#2a2a2a] p-6 animate-slide-up">
+      <div className="relative w-full sm:max-w-md bg-card border border-[#2a2a2a] p-6 animate-slide-up">
 
         {/* Header */}
         <div className="flex items-start justify-between mb-5">
           <div className="flex items-center gap-3">
-            <div className={`w-4 h-4 border flex-shrink-0 mt-0.5 flex items-center justify-center ${
-              task.completed ? 'bg-white border-white' : 'border-[#444]'
-            }`}>
+            <button onClick={() => { onEdit({ ...task, completed: !task.completed }); onClose(); }}
+              className={`w-4 h-4 border flex items-center justify-center transition-all ${
+              task.completed ? '' : 'border-[#444] hover:border-white'
+            }`}
+              style={task.completed ? { backgroundColor: 'var(--accent)', borderColor: 'var(--accent)' } : {}}
+            >
               {task.completed && (
                 <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 12 12">
-                  <path d="M2 6l3 3 5-5" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M2 6l3 3 5-5" stroke="var(--text-on-accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               )}
-            </div>
+            </button>
             <h2 className={`text-base font-semibold leading-snug ${task.completed ? 'line-through text-slate-500' : 'text-white'}`}>
               {task.title}
             </h2>
@@ -112,6 +156,68 @@ export default function TaskDetailModal({ task, onClose, onEdit, onDelete }) {
                 </>
               )}
             </div>
+          </div>
+        )}
+
+        {onCreateExpense && (
+          <div className="mb-5 pb-5 border-b border-[#1e1e1e]">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Finanzas</p>
+                <p className="text-sm text-slate-300">Convierte esta tarea en un gasto registrado.</p>
+              </div>
+              <button
+                onClick={() => setShowExpenseForm(v => !v)}
+                className="btn-outline text-xs py-1.5 px-3 flex-shrink-0"
+              >
+                Generar gasto
+              </button>
+            </div>
+
+            {showExpenseForm && (
+              <form onSubmit={handleExpenseSubmit} className="card p-4 mt-4 space-y-3 animate-slide-up">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-slate-500 uppercase tracking-wider mb-1.5 block">Monto (RD$)</label>
+                    <input
+                      className="input font-mono"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={expenseForm.amount}
+                      onChange={e => setExpense('amount', e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-500 uppercase tracking-wider mb-1.5 block">Categoria</label>
+                    <select
+                      className="input"
+                      value={expenseForm.category}
+                      onChange={e => setExpense('category', e.target.value)}
+                    >
+                      {financeCategories.map(category => (
+                        <option key={category.value} value={category.value}>{category.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <input
+                  className="input"
+                  value={expenseForm.description}
+                  onChange={e => setExpense('description', e.target.value)}
+                  placeholder="Descripcion del gasto"
+                />
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => setShowExpenseForm(false)} className="btn-outline flex-1 text-xs">
+                    Cancelar
+                  </button>
+                  <button type="submit" disabled={savingExpense} className="btn-primary flex-1 text-xs disabled:opacity-60">
+                    {savingExpense ? 'Guardando...' : 'Guardar gasto'}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         )}
 

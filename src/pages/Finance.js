@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useFinance, getCategoryInfo } from '../hooks/useFinance';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import EmptyState from '../components/ui/EmptyState';
 
 const FA_ICONS = [
   'fa-utensils','fa-bus','fa-graduation-cap','fa-champagne-glasses',
@@ -14,6 +15,80 @@ const COLORS = [
   '#f59e0b','#3b82f6','#8b5cf6','#ec4899','#f97316',
   '#10b981','#06b6d4','#ef4444','#84cc16','#a78bfa',
 ];
+
+const SUBSCRIPTION_KEYWORDS = [
+  { label: 'Netflix', icon: 'fa-tv', terms: ['netflix'] },
+  { label: 'Spotify', icon: 'fa-music', terms: ['spotify'] },
+  { label: 'YouTube', icon: 'fa-play', terms: ['youtube', 'yt premium'] },
+  { label: 'iCloud', icon: 'fa-cloud', terms: ['icloud', 'apple'] },
+  { label: 'Google', icon: 'fa-google', terms: ['google one', 'google'] },
+  { label: 'Gimnasio', icon: 'fa-dumbbell', terms: ['gym', 'gimnasio', 'fitness'] },
+  { label: 'Adobe', icon: 'fa-pen-nib', terms: ['adobe', 'creative cloud'] },
+  { label: 'ChatGPT', icon: 'fa-robot', terms: ['chatgpt', 'openai'] },
+];
+
+const detectSubscription = (item) => {
+  const name = `${item.name || ''} ${item.description || ''}`.toLowerCase();
+  return SUBSCRIPTION_KEYWORDS.find(sub => sub.terms.some(term => name.includes(term)));
+};
+
+function SavingGoalModal({ goal, onSave, onClose }) {
+  const [form, setForm] = useState({
+    name: goal?.name || '',
+    targetAmount: goal?.targetAmount || '',
+    savedAmount: goal?.savedAmount || '',
+    deadline: goal?.deadline || '',
+  });
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!form.name.trim() || !form.targetAmount) return;
+    onSave({
+      ...form,
+      targetAmount: Number(form.targetAmount),
+      savedAmount: Number(form.savedAmount || 0),
+    });
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="absolute inset-0 bg-black/80" onClick={onClose} />
+      <div className="relative w-full sm:max-w-md bg-card border border-[#2a2a2a] p-6 animate-slide-up">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-base font-semibold text-white">{goal ? 'Editar hucha' : 'Nueva hucha'}</h2>
+          <button onClick={onClose} className="text-slate-500 hover:text-white w-8 h-8 flex items-center justify-center text-lg">×</button>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input className="input" placeholder="ej. Viaje, laptop, emergencia..."
+            value={form.name} onChange={e => set('name', e.target.value)} required autoFocus />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-slate-500 uppercase tracking-wider mb-1.5 block">Meta (RD$)</label>
+              <input className="input font-mono" type="number" min="1"
+                value={form.targetAmount} onChange={e => set('targetAmount', e.target.value)} required />
+            </div>
+            <div>
+              <label className="text-xs text-slate-500 uppercase tracking-wider mb-1.5 block">Ahorrado</label>
+              <input className="input font-mono" type="number" min="0"
+                value={form.savedAmount} onChange={e => set('savedAmount', e.target.value)} />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs text-slate-500 uppercase tracking-wider mb-1.5 block">Fecha objetivo</label>
+            <input className="input date-input" type="date"
+              value={form.deadline} onChange={e => set('deadline', e.target.value)} />
+          </div>
+          <div className="flex gap-3 pt-1">
+            <button type="button" onClick={onClose} className="btn-outline flex-1">Cancelar</button>
+            <button type="submit" className="btn-primary flex-1">Guardar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 function CategoryModal({ onSave, onClose }) {
   const [form, setForm] = useState({ label: '', icon: 'fa-tag', color: '#6b7280' });
@@ -29,7 +104,7 @@ function CategoryModal({ onSave, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-black/80" onClick={onClose} />
-      <div className="relative w-full sm:max-w-md bg-[#111111] border border-[#2a2a2a] p-6 animate-slide-up">
+      <div className="relative w-full sm:max-w-md bg-card border border-[#2a2a2a] p-6 animate-slide-up">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-base font-semibold text-white">Nueva categoría</h2>
           <button onClick={onClose} className="text-slate-500 hover:text-white w-8 h-8 flex items-center justify-center text-lg">×</button>
@@ -42,7 +117,8 @@ function CategoryModal({ onSave, onClose }) {
             <div className="grid grid-cols-8 gap-2">
               {FA_ICONS.map(icon => (
                 <button key={icon} type="button" onClick={() => set('icon', icon)}
-                  className={`w-9 h-9 flex items-center justify-center transition-all border ${form.icon === icon ? 'bg-white text-black border-white' : 'border-[#2a2a2a] text-slate-400 hover:text-white hover:border-[#444]'}`}>
+                  className={`w-9 h-9 flex items-center justify-center transition-all border rounded-lg ${form.icon === icon ? '' : 'border-[#2a2a2a] text-slate-400 hover:text-white hover:border-[#444]'}`}
+                  style={form.icon === icon ? { backgroundColor: 'var(--accent)', color: 'var(--text-on-accent)', borderColor: 'var(--accent)' } : {}}>
                   <i className={`fas ${icon} text-sm`} />
                 </button>
               ))}
@@ -95,7 +171,7 @@ function TransactionModal({ transaction, allCategories, onSave, onClose, onNewCa
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-black/80" onClick={onClose} />
-      <div className="relative w-full sm:max-w-md bg-[#111111] border border-[#2a2a2a] p-6 animate-slide-up max-h-[90vh] overflow-y-auto">
+      <div className="relative w-full sm:max-w-md bg-card border border-[#2a2a2a] p-6 animate-slide-up max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-base font-semibold text-white">{transaction ? 'Editar gasto' : 'Agregar gasto'}</h2>
           <button onClick={onClose} className="text-slate-500 hover:text-white w-8 h-8 flex items-center justify-center text-lg">×</button>
@@ -112,8 +188,9 @@ function TransactionModal({ transaction, allCategories, onSave, onClose, onNewCa
             <div className="grid grid-cols-3 gap-2 mb-2">
               {allCategories.map(c => (
                 <button key={c.value} type="button" onClick={() => set('category', c.value)}
-                  className={`flex items-center gap-2 px-3 py-2 text-xs border transition-all ${form.category === c.value ? 'bg-white text-black border-white' : 'border-[#2a2a2a] text-slate-400 hover:text-white hover:border-[#444]'}`}>
-                  <i className={`fas ${c.icon} text-xs`} style={{ color: form.category === c.value ? 'black' : c.color }} />
+                  className={`flex items-center gap-2 px-3 py-2 text-xs border transition-all rounded-lg ${form.category === c.value ? '' : 'border-[#2a2a2a] text-slate-400 hover:text-white hover:border-[#444]'}`}
+                  style={form.category === c.value ? { backgroundColor: 'var(--accent)', color: 'var(--text-on-accent)', borderColor: 'var(--accent)' } : {}}>
+                  <i className={`fas ${c.icon} text-xs`} style={{ color: form.category === c.value ? 'var(--text-on-accent)' : c.color }} />
                   {c.label}
                 </button>
               ))}
@@ -138,7 +215,8 @@ function TransactionModal({ transaction, allCategories, onSave, onClose, onNewCa
                 <p className="text-xs text-slate-500 mt-0.5">Se agregará a tus gastos recurrentes</p>
               </div>
               <button type="button" onClick={() => set('isRecurring', !form.isRecurring)}
-                className={`w-11 h-6 transition-all relative ${form.isRecurring ? 'bg-white' : 'bg-[#2a2a2a]'}`}>
+                className={`w-11 h-6 transition-all relative rounded-full ${form.isRecurring ? '' : 'bg-[#2a2a2a]'}`}
+                style={form.isRecurring ? { backgroundColor: 'var(--accent)' } : {}}>
                 <span className={`absolute top-1 w-4 h-4 bg-black transition-all ${form.isRecurring ? 'left-6' : 'left-1'}`} />
               </button>
             </div>
@@ -190,7 +268,7 @@ function BudgetModal({ allCategories, getBudget, setBudget, deleteBudget, onClos
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-black/80" onClick={onClose} />
-      <div className="relative w-full sm:max-w-lg bg-[#111111] border border-[#2a2a2a] p-6 animate-slide-up max-h-[85vh] overflow-y-auto">
+      <div className="relative w-full sm:max-w-lg bg-card border border-[#2a2a2a] p-6 animate-slide-up max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-base font-semibold text-white">Presupuesto mensual</h2>
           <button onClick={onClose} className="text-slate-500 hover:text-white w-8 h-8 flex items-center justify-center text-lg">×</button>
@@ -235,7 +313,7 @@ function RecurringModal({ item, allCategories, onSave, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-black/80" onClick={onClose} />
-      <div className="relative w-full sm:max-w-md bg-[#111111] border border-[#2a2a2a] p-6 animate-slide-up">
+      <div className="relative w-full sm:max-w-md bg-card border border-[#2a2a2a] p-6 animate-slide-up">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-base font-semibold text-white">{item ? 'Editar gasto fijo' : 'Nuevo gasto fijo'}</h2>
           <button onClick={onClose} className="text-slate-500 hover:text-white w-8 h-8 flex items-center justify-center text-lg">×</button>
@@ -287,6 +365,7 @@ export default function Finance() {
     addTransaction, updateTransaction, deleteTransaction,
     setBudget, getBudget, deleteBudget,
     addRecurring, updateRecurring, deleteRecurring, recurring,
+    addSavingGoal, updateSavingGoal, deleteSavingGoal, contributeToSavingGoal, savingGoals,
     addCategory, deleteCategory, customCategories, allCategories,
     totalExpenses, getSpentByCategory,
   } = useFinance();
@@ -296,6 +375,9 @@ export default function Finance() {
   const [showBudget, setShowBudget] = useState(false);
   const [showRecurring, setShowRecurring] = useState(false);
   const [editRecurring, setEditRecurring] = useState(null);
+  const [showSavingGoal, setShowSavingGoal] = useState(false);
+  const [editSavingGoal, setEditSavingGoal] = useState(null);
+  const [savingContributions, setSavingContributions] = useState({});
   const [showCategory, setShowCategory] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
 
@@ -308,8 +390,17 @@ export default function Finance() {
     return { pending, overdue, totalFixed };
   }, [recurring, today]);
 
-  const TABS = ['overview', 'transactions', 'recurring'];
-  const TAB_LABELS = { overview: 'Resumen', transactions: 'Gastos', recurring: 'Gastos fijos' };
+  const subscriptions = useMemo(() => {
+    return recurring
+      .map(item => ({ ...item, subscription: detectSubscription(item) }))
+      .filter(item => item.subscription);
+  }, [recurring]);
+
+  const subscriptionTotal = subscriptions.reduce((a, item) => a + Number(item.amount || 0), 0);
+  const savingsTotal = savingGoals.reduce((a, goal) => a + Number(goal.savedAmount || 0), 0);
+
+  const TABS = ['overview', 'transactions', 'recurring', 'savings'];
+  const TAB_LABELS = { overview: 'Resumen', transactions: 'Gastos', recurring: 'Gastos fijos', savings: 'Huchas' };
 
 const handleSaveTransaction = async (data) => {
   if (editTransaction) {
@@ -326,6 +417,19 @@ const handleSaveTransaction = async (data) => {
     setEditRecurring(null);
   };
 
+  const handleSaveSavingGoal = (data) => {
+    if (editSavingGoal) updateSavingGoal(editSavingGoal.id, data);
+    else addSavingGoal(data);
+    setEditSavingGoal(null);
+  };
+
+  const handleContribute = async (goal) => {
+    const amount = Number(savingContributions[goal.id] || 0);
+    if (!amount) return;
+    await contributeToSavingGoal(goal, amount);
+    setSavingContributions(values => ({ ...values, [goal.id]: '' }));
+  };
+
   return (
     <div className="animate-fade-in">
       <div className="flex items-center justify-between mb-6">
@@ -335,12 +439,26 @@ const handleSaveTransaction = async (data) => {
             {format(new Date(), 'MMMM yyyy', { locale: es })}
           </p>
         </div>
-        <button onClick={() => { setEditTransaction(null); setShowTransaction(true); }} className="btn-primary py-1.5">
-          + Gasto
+        <button
+          onClick={() => {
+            if (activeTab === 'recurring') {
+              setEditRecurring(null);
+              setShowRecurring(true);
+            } else if (activeTab === 'savings') {
+              setEditSavingGoal(null);
+              setShowSavingGoal(true);
+            } else {
+              setEditTransaction(null);
+              setShowTransaction(true);
+            }
+          }}
+          className="btn-primary py-1.5"
+        >
+          {activeTab === 'recurring' ? '+ Gasto fijo' : activeTab === 'savings' ? '+ Hucha' : '+ Gasto'}
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         <div className="card p-4 text-center">
           <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Gastado este mes</p>
           <p className="text-2xl font-mono font-bold text-white">RD${totalExpenses.toLocaleString()}</p>
@@ -348,6 +466,14 @@ const handleSaveTransaction = async (data) => {
         <div className="card p-4 text-center">
           <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Gastos fijos</p>
           <p className="text-2xl font-mono font-bold text-white">RD${recurringStats.totalFixed.toLocaleString()}</p>
+        </div>
+        <div className="card p-4 text-center">
+          <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Suscripciones</p>
+          <p className="text-2xl font-mono font-bold text-white">RD${subscriptionTotal.toLocaleString()}</p>
+        </div>
+        <div className="card p-4 text-center">
+          <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Ahorrado</p>
+          <p className="text-2xl font-mono font-bold text-white">RD${savingsTotal.toLocaleString()}</p>
         </div>
       </div>
 
@@ -363,7 +489,8 @@ const handleSaveTransaction = async (data) => {
       <div className="flex border border-[#2a2a2a] mb-5">
         {TABS.map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)}
-            className={`flex-1 py-2 text-xs font-medium transition-all ${activeTab === tab ? 'bg-white text-black' : 'text-slate-500 hover:text-white'}`}>
+            className={`flex-1 py-2 text-xs font-medium transition-all rounded-md ${activeTab === tab ? '' : 'text-slate-500 hover:text-white'}`}
+            style={activeTab === tab ? { backgroundColor: 'var(--accent)', color: 'var(--text-on-accent)' } : {}}>
             {TAB_LABELS[tab]}
           </button>
         ))}
@@ -382,9 +509,10 @@ const handleSaveTransaction = async (data) => {
             const budget = getBudget(cat.value);
             const percent = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
             const over = budget > 0 && spent > budget;
+            const nearLimit = budget > 0 && !over && spent >= budget * 0.8;
             if (spent === 0 && budget === 0) return null;
             return (
-              <div key={cat.value} className="card p-4">
+              <div key={cat.value} className={`card p-4 ${over ? 'border-l-2 border-l-red-500' : nearLimit ? 'border-l-2 border-l-amber-500' : ''}`}>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <i className={`fas ${cat.icon}`} style={{ color: cat.color }} />
@@ -399,15 +527,25 @@ const handleSaveTransaction = async (data) => {
                 </div>
                 {budget > 0 && (
                   <div className="h-0.5 bg-[#1e1e1e]">
-                    <div className="h-full transition-all" style={{ width: `${percent}%`, background: over ? '#ef4444' : cat.color, height: '2px' }} />
+                    <div className="h-full transition-all" style={{ width: `${percent}%`, background: over ? '#ef4444' : nearLimit ? '#f59e0b' : cat.color, height: '2px' }} />
                   </div>
                 )}
+                {nearLimit && <p className="text-xs text-amber-400 mt-1">! Vas por {Math.round((spent / budget) * 100)}% del presupuesto.</p>}
                 {over && <p className="text-xs text-red-400 mt-1">! Pasaste RD${(spent - budget).toLocaleString()}</p>}
               </div>
             );
           })}
           {monthTransactions.length === 0 && (
-            <p className="text-slate-600 text-sm text-center py-6">Agrega tu primer gasto para ver el resumen.</p>
+            <EmptyState
+              iconClass="bi-pie-chart"
+              title="Resumen listo para empezar"
+              description="Agrega tu primer gasto del mes para ver tus categorias, presupuestos y alertas."
+              actionLabel="Agregar gasto"
+              onAction={() => {
+                setEditTransaction(null);
+                setShowTransaction(true);
+              }}
+            />
           )}
           {customCategories.length > 0 && (
             <div className="card p-4 mt-4">
@@ -433,12 +571,16 @@ const handleSaveTransaction = async (data) => {
           {loading ? (
             <p className="text-slate-600 text-sm text-center py-8">Cargando...</p>
           ) : monthTransactions.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-slate-600 text-sm">No hay gastos este mes.</p>
-              <button onClick={() => setShowTransaction(true)} className="mt-3 text-slate-500 hover:text-white text-sm underline">
-                Agregar el primero
-              </button>
-            </div>
+            <EmptyState
+              iconClass="bi-receipt"
+              title="No hay gastos este mes"
+              description="Registra el primero para mantener el pulso de tus finanzas sin esperar al final del mes."
+              actionLabel="Agregar gasto"
+              onAction={() => {
+                setEditTransaction(null);
+                setShowTransaction(true);
+              }}
+            />
           ) : (
             <div className="space-y-2">
               {monthTransactions.map(t => {
@@ -477,8 +619,48 @@ const handleSaveTransaction = async (data) => {
           <div className="flex items-center justify-between mb-4">
             <p className="text-xs text-slate-500">Total: <span className="text-white font-mono">RD${recurringStats.totalFixed.toLocaleString()}/mes</span></p>
           </div>
+          {subscriptions.length > 0 && (
+            <div className="card p-4 mb-4 border-l-2 border-l-amber-500">
+              <div className="flex items-start justify-between gap-4 mb-3">
+                <div>
+                  <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Pagos invisibles detectados</p>
+                  <p className="text-sm text-white">
+                    RD${subscriptionTotal.toLocaleString()}/mes en {subscriptions.length} suscripcion{subscriptions.length > 1 ? 'es' : ''}.
+                  </p>
+                </div>
+                {recurringStats.totalFixed > 0 && (
+                  <span className="text-xs text-amber-400 font-mono">
+                    {Math.round((subscriptionTotal / recurringStats.totalFixed) * 100)}% de fijos
+                  </span>
+                )}
+              </div>
+              <div className="grid sm:grid-cols-2 gap-2">
+                {subscriptions.map(item => (
+                  <div key={item.id} className="bg-base border border-[#1e1e1e] p-3 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <i className={`fas ${item.subscription.icon} text-amber-400 flex-shrink-0`} />
+                      <div className="min-w-0">
+                        <p className="text-sm text-white truncate">{item.name}</p>
+                        <p className="text-xs text-slate-600">{item.subscription.label}</p>
+                      </div>
+                    </div>
+                    <span className="text-xs font-mono text-white flex-shrink-0">RD${item.amount.toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           {recurring.length === 0 ? (
-            <p className="text-slate-600 text-sm text-center py-8">No hay gastos fijos todavía.</p>
+            <EmptyState
+              iconClass="bi-calendar2-check"
+              title="Sin gastos fijos todavia"
+              description="Agrega suscripciones, pagos mensuales o compromisos recurrentes para verlos antes de que sorprendan."
+              actionLabel="Nuevo gasto fijo"
+              onAction={() => {
+                setEditRecurring(null);
+                setShowRecurring(true);
+              }}
+            />
           ) : (
             <div className="space-y-2">
               {recurring.map(r => {
@@ -519,6 +701,80 @@ const handleSaveTransaction = async (data) => {
         </div>
       )}
 
+      {activeTab === 'savings' && (
+        <div className="animate-fade-in">
+          {savingGoals.length === 0 ? (
+            <EmptyState
+              iconClass="bi-piggy-bank"
+              title="Todavia no hay huchas"
+              description="Crea una meta de ahorro para separar dinero por objetivo y ver como avanza mes a mes."
+              actionLabel="Crear hucha"
+              onAction={() => {
+                setEditSavingGoal(null);
+                setShowSavingGoal(true);
+              }}
+            />
+          ) : (
+            <div className="grid sm:grid-cols-2 gap-4">
+              {savingGoals.map(goal => {
+                const saved = Number(goal.savedAmount || 0);
+                const target = Number(goal.targetAmount || 0);
+                const percent = target > 0 ? Math.min((saved / target) * 100, 100) : 0;
+                const remaining = Math.max(target - saved, 0);
+                return (
+                  <div key={goal.id} className="card p-5">
+                    <div className="flex items-start justify-between gap-3 mb-4">
+                      <div className="min-w-0">
+                        <h3 className="text-white font-semibold text-sm truncate">{goal.name}</h3>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          {goal.deadline ? `Meta para ${goal.deadline}` : 'Sin fecha objetivo'}
+                        </p>
+                      </div>
+                      <div className="flex gap-1 flex-shrink-0">
+                        <button onClick={() => { setEditSavingGoal(goal); setShowSavingGoal(true); }}
+                          className="text-xs text-slate-600 hover:text-white px-2 py-1 border border-transparent hover:border-[#333]">
+                          Editar
+                        </button>
+                        <button onClick={() => deleteSavingGoal(goal.id)}
+                          className="text-xs text-slate-600 hover:text-red-400 px-2 py-1 border border-transparent hover:border-red-900">
+                          Borrar
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-end justify-between mb-2">
+                      <div>
+                        <p className="text-2xl font-mono font-bold text-white">RD${saved.toLocaleString()}</p>
+                        <p className="text-xs text-slate-600">de RD${target.toLocaleString()}</p>
+                      </div>
+                      <span className="text-sm font-mono" style={{ color: 'var(--accent)' }}>{Math.round(percent)}%</span>
+                    </div>
+                    <div className="h-1 bg-[#1e1e1e] mb-3">
+                      <div className="h-full transition-all" style={{ width: `${percent}%`, backgroundColor: 'var(--accent)' }} />
+                    </div>
+                    <p className="text-xs text-slate-500 mb-4">Faltan RD${remaining.toLocaleString()} para completar esta meta.</p>
+
+                    <div className="flex gap-2">
+                      <input
+                        className="input py-2 font-mono"
+                        type="number"
+                        min="1"
+                        placeholder="Aporte"
+                        value={savingContributions[goal.id] || ''}
+                        onChange={e => setSavingContributions(values => ({ ...values, [goal.id]: e.target.value }))}
+                      />
+                      <button onClick={() => handleContribute(goal)} className="btn-primary px-3 py-2 text-xs">
+                        Aportar
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {showTransaction && (
         <TransactionModal transaction={editTransaction} allCategories={allCategories}
           onSave={handleSaveTransaction} onClose={() => { setShowTransaction(false); setEditTransaction(null); }}
@@ -534,6 +790,16 @@ const handleSaveTransaction = async (data) => {
       )}
       {showCategory && (
         <CategoryModal onSave={addCategory} onClose={() => setShowCategory(false)} />
+      )}
+      {showSavingGoal && (
+        <SavingGoalModal
+          goal={editSavingGoal}
+          onSave={handleSaveSavingGoal}
+          onClose={() => {
+            setShowSavingGoal(false);
+            setEditSavingGoal(null);
+          }}
+        />
       )}
     </div>
   );
