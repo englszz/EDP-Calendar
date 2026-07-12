@@ -4,7 +4,7 @@ import { useProjects } from '../hooks/useProjects';
 import { useFinance, getCategoryInfo } from '../hooks/useFinance';
 import { useStreak } from '../hooks/useStreak';
 import { CATEGORIES, PRIORITIES, formatCurrency, convertCurrency } from '../utils/helpers';
-import { format, subDays, isThisWeek } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
@@ -28,7 +28,7 @@ export default function Stats() {
   const { tasks } = useTasks();
   const { projects } = useProjects();
   const { monthTransactions, budgets, recurring, savingGoals, allCategories, customCategories, totalExpenses, getSpentByCategory } = useFinance();
-  const { currentStreak, longestStreak, totalCompleted: streakCompleted, getUnlockedAchievements, getNextAchievement, ACHIEVEMENTS } = useStreak();
+  const { currentStreak, longestStreak, getUnlockedAchievements, getNextAchievement } = useStreak();
   const [displayCurrency, setDisplayCurrency] = useState('DOP');
   const [aiInsights, setAiInsights] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
@@ -40,8 +40,6 @@ export default function Stats() {
   const completed  = tasks.filter(t => t.completed);
   const pending    = tasks.filter(t => !t.completed);
   const overdue    = tasks.filter(t => !t.completed && t.dueDate && t.dueDate < todayStr);
-  const dueToday   = tasks.filter(t => !t.completed && t.dueDate === todayStr);
-  const thisWeek   = tasks.filter(t => t.dueDate && isThisWeek(new Date(t.dueDate), { locale: es }));
   const rate       = tasks.length > 0 ? Math.round((completed.length / tasks.length) * 100) : 0;
 
   const byCategory = useMemo(() =>

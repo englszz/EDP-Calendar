@@ -398,8 +398,6 @@ export default function Finance() {
   }, [recurring]);
 
   const subscriptionTotal = subscriptions.reduce((a, item) => a + Number(item.amount || 0), 0);
-  const savingsTotal = savingGoals.reduce((a, goal) => a + Number(goal.savedAmount || 0), 0);
-
   const TABS = ['overview', 'transactions', 'recurring', 'savings'];
   const TAB_LABELS = { overview: 'Resumen', transactions: 'Gastos', recurring: 'Gastos fijos', savings: 'Huchas' };
 

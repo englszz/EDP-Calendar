@@ -2,7 +2,6 @@ import { getToken, onMessage } from 'firebase/messaging';
 import { messagingPromise } from '../config/firebase';
 import { db } from '../config/firebase';
 import { collection, addDoc, deleteDoc, doc, query, where, getDocs, onSnapshot, orderBy } from 'firebase/firestore';
-import { useAuth } from '../hooks/useAuth';
 
 const VAPID_KEY = 'BE36k2GMvRYdOFUXh9UrTVki4fG0dSTwsYeifw4tERSNYPe3Vwf_uShEkUNL7i0UehZhcfzsEf19Af8Frs2cOnY';
 

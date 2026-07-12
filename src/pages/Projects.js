@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { useProjects } from '../hooks/useProjects';
 import { useTasks } from '../hooks/useTasks';
@@ -49,6 +49,7 @@ export default function Projects() {
     .filter(p => p.status === 'active')
     .reduce((a, p) => a + (p.budget || 0), 0);
 
+  // eslint-disable-next-line no-unused-vars
   const projectProgress = useMemo(() => {
     return projects.reduce((acc, project) => {
       const linkedTasks = tasks.filter(task => task.projectId === project.id);

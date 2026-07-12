@@ -11,7 +11,7 @@ import TaskModal from '../components/tasks/TaskModal';
 import TaskDetailModal from '../components/tasks/TaskDetailModal';
 import CalendarModal from '../components/tasks/CalendarModal';
 import { CATEGORIES, isOverdue } from '../utils/helpers';
-import { format, isToday, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths, parseISO } from 'date-fns';
+import { format, isToday, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 const FILTERS = ['Todas', 'Hoy', 'Pendientes', 'Completadas'];
@@ -169,7 +169,7 @@ export default function Home() {
   const { tasks, loading, addTask, updateTask, deleteTask, toggleTask } = useTasks();
   const { projects } = useProjects();
   const { addTransaction, allCategories, savingGoals } = useFinance();
-  const { currentStreak, totalCompleted, totalSaved, hasZeroOverdue, updateStreak, getUnlockedAchievements, getNextAchievement } = useStreak();
+  const { currentStreak, updateStreak, getUnlockedAchievements, getNextAchievement } = useStreak();
   const [showModal, setShowModal]         = useState(false);
   const [editTask, setEditTask]           = useState(null);
   const [detailTask, setDetailTask]       = useState(null);
@@ -216,6 +216,7 @@ export default function Home() {
       totalSaved: savedTotal,
       hasZeroOverdue: overdueCount === 0,
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tasks, loading, todayStr, savingGoals]);
 
   const prevStreakRef = React.useRef(currentStreak);

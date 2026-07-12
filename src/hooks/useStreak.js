@@ -4,7 +4,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useAuth } from './useAuth';
-import { format, subDays, isToday, parseISO } from 'date-fns';
+import { format, subDays } from 'date-fns';
 
 const ACHIEVEMENTS = [
   { id: 'first_task',     label: 'Primera tarea',       description: 'Completaste tu primera tarea',          icon: 'bi-check-circle',   condition: (s) => s.totalCompleted >= 1 },
