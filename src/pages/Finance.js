@@ -92,7 +92,7 @@ function SavingGoalModal({ goal, onSave, onClose }) {
 }
 
 function CategoryModal({ onSave, onClose }) {
-  const [form, setForm] = useState({ label: '', icon: 'fa-tag', color: '#6b7280' });
+  const [form, setForm] = useState({ label: '', icon: 'fa-tag', color: COLORS[Math.floor(Math.random() * COLORS.length)] });
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   const handleSubmit = (e) => {
