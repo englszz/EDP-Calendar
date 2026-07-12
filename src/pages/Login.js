@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { requestNotificationPermission } from '../utils/notifications';
+import { requestNotificationPermission, checkPendingReminders } from '../utils/notifications';
 import { useTheme } from '../hooks/useTheme';
 
 export default function Login() {
@@ -15,13 +15,19 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      await signInWithGoogle();
+      const credential = await signInWithGoogle();
       
       try {
         await requestNotificationPermission();
       } catch (e) {
         // Ignorar si el usuario deniega las notificaciones
       }
+
+      // Verificar recordatorios pendientes
+      try {
+        const uid = credential?.user?.uid;
+        if (uid) checkPendingReminders(uid);
+      } catch (e) {}
       
       // Si no ha elegido tema, forzamos a que pase por el ColorPicker
       if (!hasChosenTheme) {

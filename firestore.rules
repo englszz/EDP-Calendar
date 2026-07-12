@@ -1,0 +1,86 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: verificar que el usuario esta autenticado y es dueño del documento
+    function isOwner() {
+      return request.auth != null
+        && request.resource.data.uid == request.auth.uid;
+    }
+
+    function isOwnerRead() {
+      return request.auth != null
+        && resource.data.uid == request.auth.uid;
+    }
+
+    // Tareas
+    match /tasks/{doc} {
+      allow read: if isOwnerRead();
+      allow create: if isOwner();
+      allow update: if isOwnerRead();
+      allow delete: if isOwnerRead();
+    }
+
+    // Proyectos
+    match /projects/{doc} {
+      allow read: if isOwnerRead();
+      allow create: if isOwner();
+      allow update: if isOwnerRead();
+      allow delete: if isOwnerRead();
+    }
+
+    // Transacciones
+    match /transactions/{doc} {
+      allow read: if isOwnerRead();
+      allow create: if isOwner();
+      allow update: if isOwnerRead();
+      allow delete: if isOwnerRead();
+    }
+
+    // Presupuestos
+    match /budgets/{doc} {
+      allow read: if isOwnerRead();
+      allow create: if isOwner();
+      allow update: if isOwnerRead();
+      allow delete: if isOwnerRead();
+    }
+
+    // Gastos fijos / recurrentes
+    match /recurring/{doc} {
+      allow read: if isOwnerRead();
+      allow create: if isOwner();
+      allow update: if isOwnerRead();
+      allow delete: if isOwnerRead();
+    }
+
+    // Categorias custom
+    match /categories/{doc} {
+      allow read: if isOwnerRead();
+      allow create: if isOwner();
+      allow update: if isOwnerRead();
+      allow delete: if isOwnerRead();
+    }
+
+    // Metas de ahorro (huchas)
+    match /savingGoals/{doc} {
+      allow read: if isOwnerRead();
+      allow create: if isOwner();
+      allow update: if isOwnerRead();
+      allow delete: if isOwnerRead();
+    }
+
+    // Recordatorios persistentes
+    match /reminders/{doc} {
+      allow read: if isOwnerRead();
+      allow create: if isOwner();
+      allow delete: if isOwnerRead();
+    }
+
+    // Rachas y logros
+    match /streaks/{doc} {
+      allow read: if isOwnerRead();
+      allow create: if isOwner();
+      allow update: if isOwnerRead();
+    }
+  }
+}

@@ -3,6 +3,7 @@ import { useFinance, getCategoryInfo } from '../hooks/useFinance';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import EmptyState from '../components/ui/EmptyState';
+import { toast } from '../components/ui/Toast';
 
 const FA_ICONS = [
   'fa-utensils','fa-bus','fa-graduation-cap','fa-champagne-glasses',
@@ -405,29 +406,42 @@ export default function Finance() {
 const handleSaveTransaction = async (data) => {
   if (editTransaction) {
     await updateTransaction(editTransaction.id, data);
+    toast.info('Gasto actualizado');
   } else {
     await addTransaction(data);
+    toast.success('Gasto registrado');
   }
   setEditTransaction(null);
 };
 
-  const handleSaveRecurring = (data) => {
-    if (editRecurring) updateRecurring(editRecurring.id, data);
-    else addRecurring(data);
+  const handleSaveRecurring = async (data) => {
+    if (editRecurring) {
+      await updateRecurring(editRecurring.id, data);
+      toast.info('Gasto fijo actualizado');
+    } else {
+      await addRecurring(data);
+      toast.success('Gasto fijo creado');
+    }
     setEditRecurring(null);
   };
 
-  const handleSaveSavingGoal = (data) => {
-    if (editSavingGoal) updateSavingGoal(editSavingGoal.id, data);
-    else addSavingGoal(data);
+  const handleSaveSavingGoal = async (data) => {
+    if (editSavingGoal) {
+      await updateSavingGoal(editSavingGoal.id, data);
+      toast.info('Hucha actualizada');
+    } else {
+      await addSavingGoal(data);
+      toast.success('Hucha creada');
+    }
     setEditSavingGoal(null);
   };
 
   const handleContribute = async (goal) => {
     const amount = Number(savingContributions[goal.id] || 0);
-    if (!amount) return;
+    if (!amount || amount <= 0) return;
     await contributeToSavingGoal(goal, amount);
     setSavingContributions(values => ({ ...values, [goal.id]: '' }));
+    toast.success(`RD$${amount.toLocaleString()} aportados a "${goal.name}"`);
   };
 
   return (
@@ -458,31 +472,35 @@ const handleSaveTransaction = async (data) => {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-        <div className="card p-4 text-center">
-          <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Gastado este mes</p>
+      <div className="grid grid-cols-2 gap-3 mb-6">
+        <div className="card p-4">
+          <div className="flex items-center gap-2 mb-1">
+            <i className="bi bi-wallet2 text-sm" style={{ color: 'var(--accent)' }} />
+            <p className="text-xs text-slate-500 uppercase tracking-wider">Gastado</p>
+          </div>
           <p className="text-2xl font-mono font-bold text-white">RD${totalExpenses.toLocaleString()}</p>
         </div>
-        <div className="card p-4 text-center">
-          <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Gastos fijos</p>
-          <p className="text-2xl font-mono font-bold text-white">RD${recurringStats.totalFixed.toLocaleString()}</p>
-        </div>
-        <div className="card p-4 text-center">
-          <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Suscripciones</p>
-          <p className="text-2xl font-mono font-bold text-white">RD${subscriptionTotal.toLocaleString()}</p>
-        </div>
-        <div className="card p-4 text-center">
-          <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Ahorrado</p>
-          <p className="text-2xl font-mono font-bold text-white">RD${savingsTotal.toLocaleString()}</p>
+        <div className={`card p-4 ${recurringStats.pending.length > 0 ? 'border-l-2 border-l-amber-500' : ''}`}>
+          <div className="flex items-center gap-2 mb-1">
+            <i className={`bi bi-calendar2-check text-sm ${recurringStats.pending.length > 0 ? 'text-amber-400' : ''}`} style={recurringStats.pending.length === 0 ? { color: 'var(--accent)' } : {}} />
+            <p className="text-xs text-slate-500 uppercase tracking-wider">Fijos por pagar</p>
+          </div>
+          <p className="text-2xl font-mono font-bold text-white">{recurringStats.pending.length}</p>
+          {recurringStats.pending.length > 0 && (
+            <p className="text-xs text-slate-600 mt-0.5">RD${recurringStats.pending.reduce((a, r) => a + r.amount, 0).toLocaleString()}</p>
+          )}
         </div>
       </div>
 
       {recurringStats.overdue.length > 0 && (
         <div className="card p-4 mb-4 border-l-2 border-l-red-500">
-          <p className="text-sm text-red-400 font-medium">
-            ! {recurringStats.overdue.length} pago{recurringStats.overdue.length > 1 ? 's' : ''} vencido{recurringStats.overdue.length > 1 ? 's' : ''}:{' '}
-            {recurringStats.overdue.map(r => r.name).join(', ')}
-          </p>
+          <div className="flex items-center gap-2">
+            <i className="bi bi-exclamation-triangle text-red-400" />
+            <p className="text-sm text-red-400 font-medium">
+              {recurringStats.overdue.length} pago{recurringStats.overdue.length > 1 ? 's' : ''} vencido{recurringStats.overdue.length > 1 ? 's' : ''}:{' '}
+              {recurringStats.overdue.map(r => r.name).join(', ')}
+            </p>
+          </div>
         </div>
       )}
 
@@ -530,8 +548,8 @@ const handleSaveTransaction = async (data) => {
                     <div className="h-full transition-all" style={{ width: `${percent}%`, background: over ? '#ef4444' : nearLimit ? '#f59e0b' : cat.color, height: '2px' }} />
                   </div>
                 )}
-                {nearLimit && <p className="text-xs text-amber-400 mt-1">! Vas por {Math.round((spent / budget) * 100)}% del presupuesto.</p>}
-                {over && <p className="text-xs text-red-400 mt-1">! Pasaste RD${(spent - budget).toLocaleString()}</p>}
+                {nearLimit && <p className="text-xs text-amber-400 mt-1 flex items-center gap-1"><i className="bi bi-exclamation-circle" /> Vas por {Math.round((spent / budget) * 100)}% del presupuesto.</p>}
+                {over && <p className="text-xs text-red-400 mt-1 flex items-center gap-1"><i className="bi bi-exclamation-triangle" /> Pasaste RD${(spent - budget).toLocaleString()}</p>}
               </div>
             );
           })}

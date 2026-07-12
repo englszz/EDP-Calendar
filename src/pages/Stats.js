@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useTasks } from '../hooks/useTasks';
 import { useProjects } from '../hooks/useProjects';
 import { useFinance, getCategoryInfo } from '../hooks/useFinance';
+import { useStreak } from '../hooks/useStreak';
 import { CATEGORIES, PRIORITIES, formatCurrency, convertCurrency } from '../utils/helpers';
 import { format, subDays, isThisWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -27,7 +28,8 @@ export default function Stats() {
   const { tasks } = useTasks();
   const { projects } = useProjects();
   const { monthTransactions, budgets, recurring, savingGoals, allCategories, customCategories, totalExpenses, getSpentByCategory } = useFinance();
-  const [displayCurrency, setDisplayCurrency] = useState('USD');
+  const { currentStreak, longestStreak, totalCompleted: streakCompleted, getUnlockedAchievements, getNextAchievement, ACHIEVEMENTS } = useStreak();
+  const [displayCurrency, setDisplayCurrency] = useState('DOP');
   const [aiInsights, setAiInsights] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [activeSection, setActiveSection] = useState('tasks');
@@ -144,11 +146,17 @@ export default function Stats() {
       messages: [
           {
             role: 'system',
-            content: `Eres un asistente financiero y de productividad para EDP Calendar.
-Analiza productividad, presupuestos, suscripciones, metas de ahorro y flujo de caja proyectado.
-Genera exactamente 4 insights utiles en espanol informal dominicano.
-Cada insight en una linea separada, empieza con un emoji relevante, se especifico con numeros y avisa riesgos de presupuesto si aplica.
-Sin markdown, sin asteriscos, sin guiones. Solo 4 lineas. Maximo 25 palabras por insight.`,
+            content: `Eres un asesor financiero personal para un usuario dominicano.
+Analiza estos datos y genera exactamente 4 insights ACCIONABLES y ESPECIFICOS:
+
+1. Un dato concreto con numeros reales (ej: "Gastaste RD$3,200 en comida, 40% mas que el mes pasado")
+2. Una alerta de presupuesto si aplica (ej: "Transporte va al 90% del presupuesto, cuidado")
+3. Una recomendacion concreta para ahorrar (ej: "Cancela Netflix si no lo usas, ahorrarias RD$500/mes")
+4. Una proyeccion del mes (ej: "Al ritmo actual, gastarás RD$15,000 este mes")
+
+Formato estricto: Solo texto plano, SIN emojis, SIN markdown, SIN asteriscos, SIN guiones.
+Solo 4 lineas separadas por salto de linea. Maximo 20 palabras por insight.
+Espanol informal dominicano, directo y sin rodeos.`,
           },
           {
             role: 'user',
@@ -205,14 +213,50 @@ const text = data.choices?.[0]?.message?.content || 'No se pudieron generar insi
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Stat label="Total tareas"  value={tasks.length} />
             <Stat label="Completadas"   value={completed.length} sub={`${rate}% del total`} />
-            <Stat label="Para hoy"      value={dueToday.length} />
-            <Stat label="Vencidas"      value={overdue.length} sub={overdue.length > 0 ? 'Requieren atención' : 'Al día'} />
+            <Stat label="Vencidas"      value={overdue.length} sub={overdue.length > 0 ? 'Requieren atencion' : 'Al dia'} />
+            <Stat label="Tasa de exito" value={`${rate}%`} sub={rate >= 70 ? 'Buen ritmo' : rate >= 40 ? 'Puede mejorar' : 'Empuja mas'} />
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <Stat label="Pendientes"    value={pending.length} />
-            <Stat label="Esta semana"   value={thisWeek.length} sub="con fecha asignada" />
-            <Stat label="Proyectos"     value={projects.length} />
-            <Stat label="Tasa de éxito" value={`${rate}%`} sub={rate >= 70 ? 'Buen ritmo' : rate >= 40 ? 'Puede mejorar' : 'Empuja más'} />
+
+          {/* Streak y logros */}
+          <div className="card p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Productividad</h2>
+            </div>
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <div className="bg-base border border-[#1e1e1e] p-4 text-center">
+                <i className="bi bi-fire text-orange-400 text-lg mb-1 block" />
+                <p className="text-2xl font-mono font-bold text-white">{currentStreak}</p>
+                <p className="text-xs text-slate-600">Racha actual</p>
+              </div>
+              <div className="bg-base border border-[#1e1e1e] p-4 text-center">
+                <i className="bi bi-trophy text-yellow-400 text-lg mb-1 block" />
+                <p className="text-2xl font-mono font-bold text-white">{longestStreak}</p>
+                <p className="text-xs text-slate-600">Mejor racha</p>
+              </div>
+              <div className="bg-base border border-[#1e1e1e] p-4 text-center">
+                <i className="bi bi-award text-lg mb-1 block" style={{ color: 'var(--accent)' }} />
+                <p className="text-2xl font-mono font-bold text-white">{getUnlockedAchievements().length}</p>
+                <p className="text-xs text-slate-600">Logros</p>
+              </div>
+            </div>
+            {getUnlockedAchievements().length > 0 && (
+              <div className="space-y-2">
+                {getUnlockedAchievements().map(a => (
+                  <div key={a.id} className="flex items-center gap-3 p-2 bg-base border border-[#1e1e1e]">
+                    <i className={`bi ${a.icon} text-sm`} style={{ color: 'var(--accent)' }} />
+                    <div>
+                      <p className="text-xs text-white font-medium">{a.label}</p>
+                      <p className="text-[10px] text-slate-600">{a.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {getNextAchievement() && (
+              <p className="text-[10px] text-slate-600 mt-3">
+                Siguiente logro: {getNextAchievement().label}
+              </p>
+            )}
           </div>
 
           {projects.length > 0 && (
@@ -220,7 +264,7 @@ const text = data.choices?.[0]?.message?.content || 'No se pudieron generar insi
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Ingresos</h2>
                 <div className="flex border border-[#2a2a2a]">
-                  {['USD', 'DOP'].map(c => (
+                  {['DOP', 'USD'].map(c => (
                     <button key={c} onClick={() => setDisplayCurrency(c)}
                       className={`px-3 py-1 text-xs font-mono transition-all rounded-md ${displayCurrency === c ? '' : 'text-slate-500 hover:text-white'}`}
                       style={displayCurrency === c ? { backgroundColor: 'var(--accent)', color: 'var(--text-on-accent)' } : {}}
@@ -336,13 +380,9 @@ const text = data.choices?.[0]?.message?.content || 'No se pudieron generar insi
           {/* KPIs financieros */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Stat label="Gastado este mes" value={`RD$${totalExpenses.toLocaleString()}`} />
-            <Stat label="Gastos fijos" value={`RD$${totalRecurring.toLocaleString()}`} sub="al mes" />
-            <Stat label="Fijos pagados" value={`RD$${recurringPaid.toLocaleString()}`} sub={`de RD$${totalRecurring.toLocaleString()}`} />
             <Stat label="Fijos pendientes" value={`RD$${recurringPending.toLocaleString()}`} sub={recurringPending > 0 ? 'Por pagar' : 'Todo pagado'} />
             <Stat label="Suscripciones" value={`RD$${subscriptionTotal.toLocaleString()}`} sub={`${subscriptions.length} detectadas`} />
-            <Stat label="Proyeccion mensual" value={`RD$${projectedMonthSpend.toLocaleString()}`} sub="si sigues igual" />
-            <Stat label="Metas de ahorro" value={savingGoals.length} sub={`RD$${savingGoals.reduce((a, g) => a + Number(g.savedAmount || 0), 0).toLocaleString()} ahorrado`} />
-            <Stat label="Presupuestos" value={budgetStatus.length} sub={`${budgetStatus.filter(b => b.porcentaje >= 80).length} en alerta`} />
+            <Stat label="Proyeccion" value={`RD$${projectedMonthSpend.toLocaleString()}`} sub="si sigues igual" />
           </div>
 
           {/* Top categoría */}
@@ -419,13 +459,18 @@ const text = data.choices?.[0]?.message?.content || 'No se pudieron generar insi
           {/* Groq AI Insights */}
           <div className="card p-5">
             <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Insights con IA</h2>
-                <p className="text-xs text-slate-600 mt-0.5">Análisis automático de tu situación financiera</p>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 flex items-center justify-center" style={{ backgroundColor: 'var(--accent)', color: 'var(--text-on-accent)' }}>
+                  <i className="bi bi-lightbulb text-sm" />
+                </div>
+                <div>
+                  <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Analisis IA</h2>
+                  <p className="text-xs text-slate-600 mt-0.5">Insights accionables de tu situacion</p>
+                </div>
               </div>
               <button onClick={generateInsights} disabled={aiLoading}
                 className="btn-primary text-xs py-1.5 px-3 disabled:opacity-50">
-                {aiLoading ? 'Analizando...' : 'Generar insights'}
+                {aiLoading ? 'Analizando...' : 'Generar'}
               </button>
             </div>
 
@@ -438,18 +483,23 @@ const text = data.choices?.[0]?.message?.content || 'No se pudieron generar insi
             )}
 
             {aiInsights && !aiLoading && (
-              <div className="space-y-3">
-                {aiInsights.split('\n').filter(l => l.trim()).map((line, i) => (
-                  <div key={i} className="flex items-start gap-3 p-3 bg-base border border-[#1e1e1e]">
-                    <p className="text-sm text-slate-300 leading-relaxed">{line}</p>
-                  </div>
-                ))}
+              <div className="space-y-2">
+                {aiInsights.split('\n').filter(l => l.trim()).map((line, i) => {
+                  const icons = ['bi-graph-up-arrow', 'bi-exclamation-triangle', 'bi-piggy-bank', 'bi-calendar-range'];
+                  return (
+                    <div key={i} className="flex items-start gap-3 p-3 bg-base border border-[#1e1e1e]">
+                      <i className={`bi ${icons[i] || 'bi-dot'} text-sm mt-0.5 flex-shrink-0`} style={{ color: 'var(--accent)' }} />
+                      <p className="text-sm text-slate-300 leading-relaxed">{line}</p>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
             {!aiInsights && !aiLoading && (
               <div className="text-center py-6">
-                <p className="text-slate-600 text-sm">Dale a "Generar insights" para que la IA analice tu situación.</p>
+                <i className="bi bi-bar-chart-line text-2xl text-slate-600 mb-2 block" />
+                <p className="text-slate-600 text-sm">Presiona "Generar" para obtener insights personalizados.</p>
               </div>
             )}
           </div>

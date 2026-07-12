@@ -1,15 +1,17 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DndContext, PointerSensor, TouchSensor, useDraggable, useDroppable, useSensor, useSensors } from '@dnd-kit/core';
 import { useTasks } from '../hooks/useTasks';
 import { useProjects } from '../hooks/useProjects';
 import { useFinance } from '../hooks/useFinance';
+import { useStreak } from '../hooks/useStreak';
+import { toast } from '../components/ui/Toast';
 import TaskCard from '../components/tasks/TaskCard';
 import TaskModal from '../components/tasks/TaskModal';
 import TaskDetailModal from '../components/tasks/TaskDetailModal';
 import CalendarModal from '../components/tasks/CalendarModal';
 import { CATEGORIES, isOverdue } from '../utils/helpers';
-import { format, isToday, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths } from 'date-fns';
+import { format, isToday, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 const FILTERS = ['Todas', 'Hoy', 'Pendientes', 'Completadas'];
@@ -166,7 +168,8 @@ function CalendarView({ tasks, onDayClick, onMoveTask }) {
 export default function Home() {
   const { tasks, loading, addTask, updateTask, deleteTask, toggleTask } = useTasks();
   const { projects } = useProjects();
-  const { addTransaction, allCategories } = useFinance();
+  const { addTransaction, allCategories, savingGoals } = useFinance();
+  const { currentStreak, totalCompleted, totalSaved, hasZeroOverdue, updateStreak, getUnlockedAchievements, getNextAchievement } = useStreak();
   const [showModal, setShowModal]         = useState(false);
   const [editTask, setEditTask]           = useState(null);
   const [detailTask, setDetailTask]       = useState(null);
@@ -175,6 +178,7 @@ export default function Home() {
   const [catFilter, setCatFilter]         = useState('');
   const [search, setSearch]               = useState('');
   const [viewMode, setViewMode]           = useState('list');
+  const [showCatFilters, setShowCatFilters] = useState(false);
 
   const today    = format(new Date(), "EEEE d 'de' MMMM", { locale: es });
   const todayStr = format(new Date(), 'yyyy-MM-dd');
@@ -200,10 +204,46 @@ export default function Home() {
 
   const activeProjects = projects.filter(p => p.status === 'active');
 
+  useEffect(() => {
+    if (loading || !tasks.length) return;
+    const todayCompleted = tasks.some(t => t.completed && t.dueDate === todayStr);
+    if (!todayCompleted) return;
+    const completedCount = tasks.filter(t => t.completed).length;
+    const overdueCount = tasks.filter(t => isOverdue(t.dueDate) && !t.completed).length;
+    const savedTotal = (savingGoals || []).reduce((a, g) => a + Number(g.savedAmount || 0), 0);
+    updateStreak({
+      totalCompleted: completedCount,
+      totalSaved: savedTotal,
+      hasZeroOverdue: overdueCount === 0,
+    });
+  }, [tasks, loading, todayStr, savingGoals]);
+
+  const prevStreakRef = React.useRef(currentStreak);
+  useEffect(() => {
+    if (currentStreak > prevStreakRef.current && currentStreak > 1) {
+      toast.streak(currentStreak);
+    }
+    prevStreakRef.current = currentStreak;
+  }, [currentStreak]);
+
   const handleSave = (data) => {
-    if (editTask) updateTask(editTask.id, data);
-    else addTask(data);
+    if (editTask) {
+      updateTask(editTask.id, data);
+      toast.info('Tarea actualizada');
+    } else {
+      addTask(data);
+      toast.success('Tarea creada');
+    }
     setEditTask(null);
+  };
+
+  const handleToggle = (taskId, wasCompleted) => {
+    toggleTask(taskId, wasCompleted);
+    if (!wasCompleted) {
+      const completedToday = tasks.filter(t => t.completed && t.dueDate === todayStr).length + 1;
+      toast.success('Tarea completada');
+      if (completedToday === 1) toast.info('Primera del dia');
+    }
   };
 
   const handleMoveTask = (taskId, dueDate) => {
@@ -230,26 +270,41 @@ export default function Home() {
 
   return (
     <div className="animate-fade-in">
-      <div className="mb-6">
-        <p className="text-slate-500 text-sm capitalize">{today}</p>
-        <h1 className="text-2xl font-display font-bold text-white mt-0.5">Dashboard</h1>
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <p className="text-slate-500 text-sm capitalize">{today}</p>
+          <h1 className="text-2xl font-display font-bold text-white mt-0.5">Dashboard</h1>
+        </div>
+        {currentStreak > 0 && (
+          <motion.div
+            className="card px-3 py-2 flex items-center gap-2"
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+          >
+            <i className="bi bi-fire text-orange-400" />
+            <span className="text-sm font-mono font-bold text-white">{currentStreak}</span>
+            <span className="text-xs text-slate-500 hidden sm:inline">dia{currentStreak !== 1 ? 's' : ''}</span>
+          </motion.div>
+        )}
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 gap-3 mb-6">
         {[
-          { label: 'Total',       val: stats.total },
-          { label: 'Completadas', val: stats.completed },
-          { label: 'Para hoy',   val: stats.today },
-          { label: 'Vencidas',   val: stats.overdue },
+          { label: 'Pendientes', val: stats.total - stats.completed, icon: 'bi-list-task' },
+          { label: 'Vencidas', val: stats.overdue, icon: 'bi-exclamation-triangle', danger: stats.overdue > 0 },
         ].map(s => (
           <motion.div
             key={s.label}
-            className="card p-4"
+            className={`card p-4 ${s.danger ? 'border-l-2 border-l-red-500' : ''}`}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: 'spring', stiffness: 360, damping: 32 }}
           >
-            <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">{s.label}</p>
+            <div className="flex items-center gap-2 mb-1">
+              <i className={`bi ${s.icon} text-sm`} style={{ color: s.danger ? '#ef4444' : 'var(--accent)' }} />
+              <p className="text-xs text-slate-500 uppercase tracking-wider">{s.label}</p>
+            </div>
             <p className="text-2xl font-display font-bold text-white">{s.val}</p>
           </motion.div>
         ))}
@@ -257,9 +312,14 @@ export default function Home() {
 
       {activeProjects.length > 0 && (
         <div className="card p-4 mb-6">
-          <p className="text-xs text-slate-500 uppercase tracking-wider mb-2">Proyectos activos</p>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-slate-500 uppercase tracking-wider">Proyectos activos</p>
+            {activeProjects.length > 3 && (
+              <a href="/projects" className="text-xs text-slate-600 hover:text-white transition-colors">Ver todos</a>
+            )}
+          </div>
           <div className="flex flex-wrap gap-x-5 gap-y-1">
-            {activeProjects.map(p => (
+            {activeProjects.slice(0, 3).map(p => (
               <div key={p.id} className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--accent)' }} />
                 <span className="text-sm text-slate-300">{p.name}</span>
@@ -300,7 +360,7 @@ export default function Home() {
       {viewMode === 'list' && (
         <div className="space-y-3 mb-4">
           <input className="input" placeholder="Buscar tarea..." value={search} onChange={e => setSearch(e.target.value)} />
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
             {FILTERS.map(f => (
               <button key={f} onClick={() => setFilter(f)}
                 className={`px-3 py-1 text-xs font-medium transition-all border rounded-md ${filter === f ? '' : 'border-[#2a2a2a] text-slate-400 hover:text-white'}`}
@@ -309,19 +369,38 @@ export default function Home() {
                 {f}
               </button>
             ))}
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            <button onClick={() => setCatFilter('')}
-              className={`px-3 py-1 text-xs transition-all border ${!catFilter ? 'border-[#444] text-white' : 'border-transparent text-slate-600 hover:text-white'}`}>
-              Todas
+            <button onClick={() => setShowCatFilters(!showCatFilters)}
+              className={`px-2 py-1 text-xs transition-all border rounded-md flex items-center gap-1 ${showCatFilters ? 'border-[#444] text-white' : 'border-transparent text-slate-600 hover:text-white'}`}>
+              <i className={`bi bi-funnel${showCatFilters ? '-fill' : ''}`} />
+              {catFilter ? CATEGORIES.find(c => c.value === catFilter)?.label : 'Categorias'}
             </button>
-            {CATEGORIES.map(c => (
-              <button key={c.value} onClick={() => setCatFilter(c.value === catFilter ? '' : c.value)}
-                className={`px-3 py-1 text-xs transition-all border ${catFilter === c.value ? 'border-[#444] text-white' : 'border-transparent text-slate-600 hover:text-white'}`}>
-                {c.label}
+            {catFilter && (
+              <button onClick={() => setCatFilter('')}
+                className="px-2 py-1 text-xs text-red-400 hover:text-red-300 transition-colors">
+                <i className="bi bi-x" />
               </button>
-            ))}
+            )}
           </div>
+          <AnimatePresence>
+            {showCatFilters && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                className="overflow-hidden"
+              >
+                <div className="flex gap-2 flex-wrap pt-1">
+                  {CATEGORIES.map(c => (
+                    <button key={c.value} onClick={() => setCatFilter(c.value === catFilter ? '' : c.value)}
+                      className={`px-3 py-1 text-xs transition-all border rounded-md ${catFilter === c.value ? 'border-[#444] text-white' : 'border-transparent text-slate-600 hover:text-white'}`}>
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       )}
 
@@ -330,27 +409,55 @@ export default function Home() {
           <div className="text-center py-12 text-slate-600 text-sm">Cargando...</div>
         ) : filteredTasks.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-slate-600 text-sm">
-              {filter === 'Pendientes' ? 'No hay tareas pendientes.' : 'Sin resultados.'}
+            <i className="bi bi-check-circle text-3xl text-slate-600 mb-3 block" />
+            <p className="text-slate-500 text-sm">
+              {filter === 'Pendientes' ? 'No hay tareas pendientes. Tiempo libre.' : 'Sin resultados.'}
             </p>
-            <button onClick={() => { setEditTask(null); setShowModal(true); }}
-              className="mt-3 text-slate-500 hover:text-white text-sm transition-colors underline">
-              Crear tarea
-            </button>
+            {filter === 'Pendientes' && (
+              <button onClick={() => { setEditTask(null); setShowModal(true); }}
+                className="mt-3 text-slate-500 hover:text-white text-sm transition-colors underline">
+                Crear tarea
+              </button>
+            )}
           </div>
         ) : (
           <div className="space-y-2">
             <AnimatePresence initial={false}>
               {filteredTasks.map(task => (
                 <TaskCard key={task.id} task={task}
-                  onToggle={toggleTask}
+                  onToggle={handleToggle}
                   onClick={setDetailTask}
                   onEdit={(t) => { setEditTask(t); setShowModal(true); }}
-                  onDelete={deleteTask} />
+                  onDelete={(id) => { deleteTask(id); toast.info('Tarea eliminada'); }} />
               ))}
             </AnimatePresence>
           </div>
         )
+      )}
+
+      {getUnlockedAchievements().length > 0 && (
+        <div className="mt-6">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs text-slate-500 uppercase tracking-wider">Logros</p>
+            <span className="text-xs text-slate-600">{getUnlockedAchievements().length}/{8}</span>
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
+            {getUnlockedAchievements().map(a => (
+              <div key={a.id} className="card px-3 py-2 flex items-center gap-2 flex-shrink-0 min-w-0">
+                <i className={`bi ${a.icon} text-sm`} style={{ color: 'var(--accent)' }} />
+                <div className="min-w-0">
+                  <p className="text-xs text-white font-medium truncate">{a.label}</p>
+                  <p className="text-[10px] text-slate-600 truncate">{a.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          {getNextAchievement() && (
+            <p className="text-[10px] text-slate-600 mt-2">
+              Siguiente: {getNextAchievement().label} — {getNextAchievement().description}
+            </p>
+          )}
+        </div>
       )}
 
       {/* Modals */}

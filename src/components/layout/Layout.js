@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet, NavLink, Navigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import ToastContainer from '../ui/Toast';
 
 import ThemePopover from './ThemePopover';
 import 'bootstrap-icons/font/bootstrap-icons.css';
@@ -41,6 +42,7 @@ const Layout = () => {
 
   return (
     <div className="min-h-screen bg-surface flex flex-col">
+      <ToastContainer />
 
       {/* HEADER */}
       <header className="sticky top-0 z-50 bg-base border-b border-[#1e1e1e]">

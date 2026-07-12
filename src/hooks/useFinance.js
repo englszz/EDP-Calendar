@@ -138,10 +138,13 @@ export const useFinance = () => {
 
   const updateSavingGoal = (id, data) => updateDoc(doc(db, 'savingGoals', id), data);
   const deleteSavingGoal = (id) => deleteDoc(doc(db, 'savingGoals', id));
-  const contributeToSavingGoal = (goal, amount) =>
-    updateDoc(doc(db, 'savingGoals', goal.id), {
-      savedAmount: Number(goal.savedAmount || 0) + Number(amount),
+  const contributeToSavingGoal = async (goal, amount) => {
+    const num = Number(amount);
+    if (!num || num <= 0) return;
+    await updateDoc(doc(db, 'savingGoals', goal.id), {
+      savedAmount: Number(goal.savedAmount || 0) + num,
     });
+  };
 
   // Computed
   const monthTransactions = transactions.filter(t => t.date?.startsWith(currentMonth));

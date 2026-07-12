@@ -53,19 +53,10 @@ export default function Projects() {
     return projects.reduce((acc, project) => {
       const linkedTasks = tasks.filter(task => task.projectId === project.id);
       const completed = linkedTasks.filter(task => task.completed).length;
-      acc[project.id] = linkedTasks.length ? Math.round((completed / linkedTasks.length) * 100) : 0;
+      acc[project.id] = linkedTasks.length ? Math.round((completed / linkedTasks.length) * 100) : (project.progress || 0);
       return acc;
     }, {});
   }, [projects, tasks]);
-
-  useEffect(() => {
-    projects.forEach(project => {
-      const nextProgress = projectProgress[project.id] || 0;
-      if ((project.progress || 0) !== nextProgress) {
-        updateProject(project.id, { progress: nextProgress });
-      }
-    });
-  }, [projects, projectProgress, updateProject]);
 
   const handleSaveProject = (data) => {
     if (editProject) {

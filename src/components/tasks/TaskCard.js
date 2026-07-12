@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDate, isOverdue, getCategoryInfo, getPriorityInfo } from '../../utils/helpers';
-import { isIOS, showNotification, addTaskToCalendar } from '../../utils/notifications';
+import { isIOS, isPWA, supportsWebNotifications, showNotification, addTaskToCalendar } from '../../utils/notifications';
 import { CalendarIcon, BellIcon, EditIcon, TrashIcon } from '../icons/Icons';
 
 export default function TaskCard({ task, onToggle, onClick, onEdit, onDelete }) {
@@ -9,16 +9,12 @@ export default function TaskCard({ task, onToggle, onClick, onEdit, onDelete }) 
   const pri = getPriorityInfo(task.priority);
   const overdue = isOverdue(task.dueDate) && !task.completed;
   const isiOS = isIOS();
+  const canNotify = supportsWebNotifications() && Notification.permission === 'granted';
 
   const handleNotifyNow = (e) => {
     e.stopPropagation();
-    const hoursUntilDue = (new Date(task.dueDate) - new Date()) / (1000 * 60 * 60);
-    let urgency = '📌';
-    if (hoursUntilDue < 1) urgency = '🔴';
-    else if (hoursUntilDue < 24) urgency = '🟡';
-    
     showNotification(
-      `${urgency} ${task.title}`,
+      task.title,
       `Vence: ${formatDate(task.dueDate)}`,
       { taskId: task.id }
     );
@@ -28,6 +24,10 @@ export default function TaskCard({ task, onToggle, onClick, onEdit, onDelete }) 
     e.stopPropagation();
     addTaskToCalendar(task);
   };
+
+  // En iOS: mostrar calendario si no es PWA con permisos, notificacion si es PWA
+  const showCalendarOption = isiOS && (!canNotify || !isPWA());
+  const showNotifyOption = !isiOS || canNotify;
 
   return (
     <motion.div
@@ -82,18 +82,18 @@ export default function TaskCard({ task, onToggle, onClick, onEdit, onDelete }) 
       </div>
 
       <div className="flex-shrink-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        {/* Botón de calendario (iOS) o notificación (otros) */}
         {!task.completed && task.dueDate && (
           <>
-            {isiOS ? (
-              <button 
+            {showCalendarOption && (
+              <button
                 onClick={handleAddToCalendar}
                 className="px-2 py-1 text-slate-600 hover:text-green-400 transition-colors text-xs border border-transparent hover:border-green-900 flex items-center gap-1"
                 title="Agregar al calendario">
                 <CalendarIcon className="w-3.5 h-3.5" />
               </button>
-            ) : (
-              <button 
+            )}
+            {showNotifyOption && (
+              <button
                 onClick={handleNotifyNow}
                 className="px-2 py-1 text-slate-600 hover:text-blue-400 transition-colors text-xs border border-transparent hover:border-blue-900 flex items-center gap-1"
                 title="Notificar ahora">

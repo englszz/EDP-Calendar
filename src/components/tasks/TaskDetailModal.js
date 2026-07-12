@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { getCategoryInfo, getPriorityInfo, formatDate, isOverdue } from '../../utils/helpers';
-import { isIOS, showNotification, addTaskToCalendar, scheduleTaskReminder } from '../../utils/notifications';
+import { isIOS, isPWA, supportsWebNotifications, showNotification, addTaskToCalendar, scheduleTaskReminder } from '../../utils/notifications';
+import { useAuth } from '../../hooks/useAuth';
 
 export default function TaskDetailModal({ task, onClose, onEdit, onDelete, onCreateExpense, financeCategories = [] }) {
+  const { user } = useAuth();
   const [showExpenseForm, setShowExpenseForm] = useState(false);
   const [expenseForm, setExpenseForm] = useState({
     amount: '',
@@ -10,6 +12,7 @@ export default function TaskDetailModal({ task, onClose, onEdit, onDelete, onCre
     description: task?.title ? `Gasto: ${task.title}` : '',
   });
   const [savingExpense, setSavingExpense] = useState(false);
+  const [reminderScheduled, setReminderScheduled] = useState(false);
 
   useEffect(() => {
     if (!financeCategories.length) return;
@@ -34,19 +37,23 @@ export default function TaskDetailModal({ task, onClose, onEdit, onDelete, onCre
   const pri = getPriorityInfo(task.priority);
   const overdue = isOverdue(task.dueDate) && !task.completed;
   const isiOS = isIOS();
+  const canNotify = supportsWebNotifications() && Notification.permission === 'granted';
+  const showCalendarOption = isiOS && (!canNotify || !isPWA());
+  const showNotifyOption = !isiOS || canNotify;
 
   const handleNotifyNow = () => {
     showNotification(
-      `📌 ${task.title}`,
+      task.title,
       task.description || `Vence: ${formatDate(task.dueDate)}`,
       { taskId: task.id }
     );
   };
 
-  const handleScheduleReminder = () => {
-    scheduleTaskReminder(task, 30); // 30 minutos antes
+  const handleScheduleReminder = async () => {
+    await scheduleTaskReminder(task, 30, user?.uid);
+    setReminderScheduled(true);
     showNotification(
-      '⏰ Recordatorio programado',
+      'Recordatorio programado',
       `Te avisaremos 30 minutos antes de "${task.title}"`,
       { taskId: task.id }
     );
@@ -130,30 +137,37 @@ export default function TaskDetailModal({ task, onClose, onEdit, onDelete, onCre
           </div>
         </div>
 
-        {/* Notification options (solo si no está completada) */}
+        {/* Notification options (solo si no esta completada) */}
         {!task.completed && task.dueDate && (
           <div className="mb-5 pb-5 border-b border-[#1e1e1e]">
             <p className="text-xs text-slate-500 uppercase tracking-wider mb-3">Recordatorios</p>
             <div className="flex flex-col gap-2">
-              {isiOS ? (
-                <button
-                  onClick={handleAddToCalendar}
-                  className="w-full px-4 py-2 text-xs bg-green-600/20 text-green-400 border border-green-900 hover:bg-green-600/30 transition-all text-left">
-                  📅 Agregar al Calendario (con recordatorio nativo)
-                </button>
-              ) : (
+              {showNotifyOption && (
                 <>
                   <button
                     onClick={handleNotifyNow}
-                    className="w-full px-4 py-2 text-xs bg-blue-600/20 text-blue-400 border border-blue-900 hover:bg-blue-600/30 transition-all text-left">
-                    Notificar ahora
+                    className="w-full px-4 py-2 text-xs bg-blue-600/20 text-blue-400 border border-blue-900 hover:bg-blue-600/30 transition-all text-left flex items-center gap-2">
+                    <i className="bi bi-bell" /> Notificar ahora
                   </button>
                   <button
                     onClick={handleScheduleReminder}
-                    className="w-full px-4 py-2 text-xs bg-orange-600/20 text-orange-400 border border-orange-900 hover:bg-orange-600/30 transition-all text-left">
-                    Programar recordatorio (30 min antes)
+                    disabled={reminderScheduled}
+                    className="w-full px-4 py-2 text-xs bg-orange-600/20 text-orange-400 border border-orange-900 hover:bg-orange-600/30 transition-all text-left flex items-center gap-2 disabled:opacity-50">
+                    <i className="bi bi-alarm" /> {reminderScheduled ? 'Recordatorio activo' : 'Programar recordatorio (30 min antes)'}
                   </button>
                 </>
+              )}
+              {showCalendarOption && (
+                <button
+                  onClick={handleAddToCalendar}
+                  className="w-full px-4 py-2 text-xs bg-green-600/20 text-green-400 border border-green-900 hover:bg-green-600/30 transition-all text-left flex items-center gap-2">
+                  <i className="bi bi-calendar-plus" /> Agregar al Calendario (con recordatorio nativo)
+                </button>
+              )}
+              {isiOS && !isPWA() && (
+                <p className="text-[10px] text-slate-600 leading-relaxed">
+                  Para notificaciones en iPhone, instala la app en tu pantalla de inicio desde Safari.
+                </p>
               )}
             </div>
           </div>
