@@ -188,10 +188,8 @@ export default function Projects() {
               <ProjectCard
                 key={p.id}
                 project={p}
-                onEdit={(proj) => {
-                  setSelectedProject(proj);
-                  handleEditProject(proj);
-                }}
+                onSelect={(proj) => setSelectedProject(proj)}
+                onEdit={(proj) => handleEditProject(proj)}
                 onDelete={deleteProject}
               />
             ))}

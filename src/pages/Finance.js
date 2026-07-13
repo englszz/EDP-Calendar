@@ -606,13 +606,13 @@ const handleSaveTransaction = async (data) => {
                     <i className={`fas ${cat.icon} flex-shrink-0`} style={{ color: cat.color }} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm text-white font-medium truncate">{t.description || cat.label}</p>
+                        <p className="text-sm text-white font-medium truncate max-w-[60%]">{t.description || cat.label}</p>
                         {t.isRecurring && <span className="text-xs text-slate-600 border border-[#2a2a2a] px-1.5 py-0.5">Fijo</span>}
                       </div>
                       <p className="text-xs text-slate-600">{t.date}</p>
                     </div>
                     <p className="text-sm font-mono font-bold text-white flex-shrink-0">RD${t.amount.toLocaleString()}</p>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="hidden group-hover:flex gap-1 transition-opacity">
                       <button onClick={() => { setEditTransaction(t); setShowTransaction(true); }}
                         className="px-2 py-1 text-xs text-slate-500 hover:text-white border border-transparent hover:border-[#333] transition-all">
                         Editar
@@ -685,29 +685,29 @@ const handleSaveTransaction = async (data) => {
                 const statusColor = r.status === 'paid' ? '#10b981' : isOverdue ? '#ef4444' : '#f59e0b';
                 const statusLabel = r.status === 'paid' ? 'Pagado' : isOverdue ? 'Vencido' : 'Pendiente';
                 return (
-                  <div key={r.id} className={`card p-4 flex items-center gap-3 group hover:border-[#333] transition-all ${isOverdue ? 'border-l-2 border-l-red-500' : ''}`}>
-                    <i className={`fas ${cat.icon} flex-shrink-0`} style={{ color: cat.color }} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-white font-medium">{r.name}</p>
-                      <p className="text-xs text-slate-600">Día {r.dueDay} · {r.frequency === 'monthly' ? 'Mensual' : r.frequency === 'weekly' ? 'Semanal' : 'Anual'}</p>
-                    </div>
-                    <p className="text-sm font-mono font-bold text-white flex-shrink-0">RD${r.amount.toLocaleString()}</p>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-xs px-2 py-0.5 border" style={{ color: statusColor, borderColor: statusColor + '40' }}>{statusLabel}</span>
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => updateRecurring(r.id, { status: r.status === 'paid' ? 'pending' : 'paid' })}
-                          className="px-2 py-1 text-xs text-slate-500 hover:text-white border border-transparent hover:border-[#333] transition-all">
-                          {r.status === 'paid' ? 'Desmarcar' : 'Pagado'}
-                        </button>
-                        <button onClick={() => { setEditRecurring(r); setShowRecurring(true); }}
-                          className="px-2 py-1 text-xs text-slate-500 hover:text-white border border-transparent hover:border-[#333] transition-all">
-                          Editar
-                        </button>
-                        <button onClick={() => deleteRecurring(r.id)}
-                          className="px-2 py-1 text-xs text-slate-500 hover:text-red-400 border border-transparent hover:border-red-900 transition-all">
-                          Borrar
-                        </button>
+                  <div key={r.id} className={`card p-4 group hover:border-[#333] transition-all ${isOverdue ? 'border-l-2 border-l-red-500' : ''}`}>
+                    <div className="flex items-center gap-3">
+                      <i className={`fas ${cat.icon} flex-shrink-0`} style={{ color: cat.color }} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-white font-medium truncate">{r.name}</p>
+                        <p className="text-xs text-slate-600">Día {r.dueDay} · {r.frequency === 'monthly' ? 'Mensual' : r.frequency === 'weekly' ? 'Semanal' : 'Anual'}</p>
                       </div>
+                      <span className="text-xs px-2 py-0.5 border flex-shrink-0" style={{ color: statusColor, borderColor: statusColor + '40' }}>{statusLabel}</span>
+                      <p className="text-sm font-mono font-bold text-white flex-shrink-0">RD${r.amount.toLocaleString()}</p>
+                    </div>
+                    <div className="hidden group-hover:flex items-center gap-2 mt-2 pt-2 border-t border-[#1e1e1e]">
+                      <button onClick={() => updateRecurring(r.id, { status: r.status === 'paid' ? 'pending' : 'paid' })}
+                        className="px-2 py-1 text-xs text-slate-500 hover:text-white border border-transparent hover:border-[#333] transition-all">
+                        {r.status === 'paid' ? 'Desmarcar' : 'Pagado'}
+                      </button>
+                      <button onClick={() => { setEditRecurring(r); setShowRecurring(true); }}
+                        className="px-2 py-1 text-xs text-slate-500 hover:text-white border border-transparent hover:border-[#333] transition-all">
+                        Editar
+                      </button>
+                      <button onClick={() => deleteRecurring(r.id)}
+                        className="px-2 py-1 text-xs text-slate-500 hover:text-red-400 border border-transparent hover:border-red-900 transition-all">
+                        Borrar
+                      </button>
                     </div>
                   </div>
                 );

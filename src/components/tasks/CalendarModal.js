@@ -1,25 +1,34 @@
 import React from 'react';
 import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+
+const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const DAYS_FULL_ES = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+
+function formatSpanishDate(date) {
+  const d = new Date(date);
+  return `${DAYS_FULL_ES[d.getDay()]} ${d.getDate()} de ${MONTHS_ES[d.getMonth()]}`;
+}
 
 function getCategoryInfo(category) {
   const categories = {
-    work: { label: "Trabajo", color: "#3b82f6" },
-    personal: { label: "Personal", color: "#8b5cf6" },
-    health: { label: "Salud", color: "#ec4899" },
-    study: { label: "Estudio", color: "#f59e0b" },
-    other: { label: "Otros", color: "#6b7280" },
+    comida: { label: 'Comida', color: '#f59e0b' },
+    transporte: { label: 'Transporte', color: '#3b82f6' },
+    universidad: { label: 'Universidad', color: '#8b5cf6' },
+    salidas: { label: 'Salidas', color: '#ec4899' },
+    servicios: { label: 'Servicios', color: '#f97316' },
+    salud: { label: 'Salud', color: '#10b981' },
+    ropa: { label: 'Ropa', color: '#06b6d4' },
   };
-  return categories[category] || categories.other;
+  return categories[category] || { label: category || 'Otros', color: '#6b7280' };
 }
 
 function getPriorityInfo(priority) {
   const priorities = {
-    high: { label: "Alta", color: "#ef4444" },
-    medium: { label: "Media", color: "#f59e0b" },
-    low: { label: "Baja", color: "#22c55e" },
+    alta:  { label: 'Alta',  color: '#ef4444' },
+    media: { label: 'Media', color: '#f59e0b' },
+    baja:  { label: 'Baja',  color: '#22c55e' },
   };
-  return priorities[priority] || priorities.medium;
+  return priorities[priority] || priorities.media;
 }
 
 function isOverdue(dueDate) {
@@ -31,7 +40,7 @@ export default function CalendarModal({ day, tasks, onClose, onSelectTask }) {
   if (!day) return null;
 
   const dayTasks = tasks.filter(t => t.dueDate === format(day, 'yyyy-MM-dd'));
-  const label = format(day, "EEEE d 'de' MMMM", { locale: es });
+  const label = formatSpanishDate(day);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">

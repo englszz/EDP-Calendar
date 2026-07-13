@@ -4,7 +4,7 @@ import { formatDate, isOverdue, formatCurrency, convertCurrency } from '../../ut
 
 const STATUS_LABELS = { active: 'Activo', paused: 'Pausado', completed: 'Completado' };
 
-export default function ProjectCard({ project, onEdit, onDelete }) {
+export default function ProjectCard({ project, onSelect, onEdit, onDelete }) {
   const overdue = isOverdue(project.deadline) && project.status !== 'completed';
   const currency = project.currency || 'USD';
   const altCurrency = currency === 'USD' ? 'DOP' : 'USD';
@@ -19,7 +19,7 @@ export default function ProjectCard({ project, onEdit, onDelete }) {
       whileHover={{ y: -2 }}
       transition={{ type: 'spring', stiffness: 360, damping: 32 }}
       className="card p-5 hover:border-[#333] transition-all group cursor-pointer"
-      onClick={() => onEdit(project)}
+      onClick={() => onSelect(project)}
     >
       <div className="flex items-start justify-between mb-4">
         <div>
@@ -30,6 +30,10 @@ export default function ProjectCard({ project, onEdit, onDelete }) {
           <span className="text-xs text-slate-500 border border-[#2a2a2a] px-2 py-0.5">
             {STATUS_LABELS[project.status]}
           </span>
+          <button onClick={(e) => { e.stopPropagation(); onEdit(project); }}
+            className="text-slate-600 hover:text-white opacity-0 group-hover:opacity-100 transition-all text-xs p-1">
+            <i className="fas fa-pen text-[10px]" />
+          </button>
           <button onClick={(e) => { e.stopPropagation(); onDelete(project.id); }}
             className="text-slate-700 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all text-xs p-1">
             ✕

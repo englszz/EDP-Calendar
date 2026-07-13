@@ -12,7 +12,18 @@ import TaskDetailModal from '../components/tasks/TaskDetailModal';
 import CalendarModal from '../components/tasks/CalendarModal';
 import { CATEGORIES, isOverdue } from '../utils/helpers';
 import { format, isToday, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths } from 'date-fns';
-import { es } from 'date-fns/locale';
+const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const DAYS_FULL_ES = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+
+function formatSpanishDate(date) {
+  const d = new Date(date);
+  return `${DAYS_FULL_ES[d.getDay()]} ${d.getDate()} de ${MONTHS_ES[d.getMonth()]}`;
+}
+
+function formatSpanishMonth(date) {
+  const d = new Date(date);
+  return `${MONTHS_ES[d.getMonth()]} ${d.getFullYear()}`;
+}
 
 const FILTERS = ['Todas', 'Hoy', 'Pendientes', 'Completadas'];
 
@@ -120,7 +131,7 @@ function CalendarView({ tasks, onDayClick, onMoveTask }) {
         <button onClick={() => setCurrentMonth(m => subMonths(m, 1))}
           className="text-slate-400 hover:text-white px-2 py-1 transition-colors text-sm">← Ant</button>
         <span className="text-sm font-semibold text-white capitalize">
-          {format(currentMonth, 'MMMM yyyy', { locale: es })}
+          {formatSpanishMonth(currentMonth)}
         </span>
         <button onClick={() => setCurrentMonth(m => addMonths(m, 1))}
           className="text-slate-400 hover:text-white px-2 py-1 transition-colors text-sm">Sig →</button>
@@ -180,7 +191,7 @@ export default function Home() {
   const [viewMode, setViewMode]           = useState('list');
   const [showCatFilters, setShowCatFilters] = useState(false);
 
-  const today    = format(new Date(), "EEEE d 'de' MMMM", { locale: es });
+  const today    = formatSpanishDate(new Date());
   const todayStr = format(new Date(), 'yyyy-MM-dd');
 
   const filteredTasks = useMemo(() =>
